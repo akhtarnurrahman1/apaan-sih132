@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kalkulator Sederhana</title>
+    <!-- Memuat Tailwind CSS untuk styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        /* Menggunakan font Inter untuk tampilan yang lebih modern */
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Style untuk mencegah pemilihan teks pada tombol saat diklik berulang kali */
+        .calculator-btn {
+            user-select: none;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 dark:bg-gray-900 flex items-center justify-center min-h-screen transition-colors duration-300">
+
+    <!-- Kontainer utama untuk kalkulator -->
+    <div class="w-full max-w-sm mx-auto bg-white dark:bg-gray-800 rounded-2xl shadow-2xl overflow-hidden">
+        
+        <!-- Layar Display Kalkulator -->
+        <div id="display-container" class="p-6">
+            <input type="text" id="display" class="w-full bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-5xl text-right font-bold rounded-lg p-4 border-none focus:ring-2 focus:ring-blue-500" readonly placeholder="0">
+        </div>
+
+        <!-- Tombol-tombol Kalkulator -->
+        <div class="grid grid-cols-4 gap-2 p-4">
+            <!-- Baris 1 -->
+            <button onclick="clearDisplay()" class="calculator-btn text-2xl font-bold bg-gray-200 dark:bg-gray-600 text-gray-900 dark:text-white p-4 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-500 active:scale-95 transition-transform">C</button>
+            <button onclick="appendValue('(')" class="calculator-btn text-2xl font-bold bg-gray-200 dark:bg-gray-600 text-gray-900 dark:text-white p-4 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-500 active:scale-95 transition-transform">(</button>
+            <button onclick="appendValue(')')" class="calculator-btn text-2xl font-bold bg-gray-200 dark:bg-gray-600 text-gray-900 dark:text-white p-4 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-500 active:scale-95 transition-transform">)</button>
+            <button onclick="appendValue('/')" class="calculator-btn text-2xl font-bold bg-blue-500 text-white p-4 rounded-lg hover:bg-blue-600 active:scale-95 transition-transform">/</button>
+
+            <!-- Baris 2 -->
+            <button onclick="appendValue('7')" class="calculator-btn text-2xl font-bold bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white p-4 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 active:scale-95 transition-transform">7</button>
+            <button onclick="appendValue('8')" class="calculator-btn text-2xl font-bold bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white p-4 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 active:scale-95 transition-transform">8</button>
+            <button onclick="appendValue('9')" class="calculator-btn text-2xl font-bold bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white p-4 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 active:scale-95 transition-transform">9</button>
+            <button onclick="appendValue('*')" class="calculator-btn text-2xl font-bold bg-blue-500 text-white p-4 rounded-lg hover:bg-blue-600 active:scale-95 transition-transform">*</button>
+
+            <!-- Baris 3 -->
+            <button onclick="appendValue('4')" class="calculator-btn text-2xl font-bold bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white p-4 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 active:scale-95 transition-transform">4</button>
+            <button onclick="appendValue('5')" class="calculator-btn text-2xl font-bold bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white p-4 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 active:scale-95 transition-transform">5</button>
+            <button onclick="appendValue('6')" class="calculator-btn text-2xl font-bold bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white p-4 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 active:scale-95 transition-transform">6</button>
+            <button onclick="appendValue('-')" class="calculator-btn text-2xl font-bold bg-blue-500 text-white p-4 rounded-lg hover:bg-blue-600 active:scale-95 transition-transform">-</button>
+
+            <!-- Baris 4 -->
+            <button onclick="appendValue('1')" class="calculator-btn text-2xl font-bold bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white p-4 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 active:scale-95 transition-transform">1</button>
+            <button onclick="appendValue('2')" class="calculator-btn text-2xl font-bold bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white p-4 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 active:scale-95 transition-transform">2</button>
+            <button onclick="appendValue('3')" class="calculator-btn text-2xl font-bold bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white p-4 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 active:scale-95 transition-transform">3</button>
+            <button onclick="appendValue('+')" class="calculator-btn text-2xl font-bold bg-blue-500 text-white p-4 rounded-lg hover:bg-blue-600 active:scale-95 transition-transform">+</button>
+
+            <!-- Baris 5 -->
+            <button onclick="appendValue('0')" class="calculator-btn col-span-2 text-2xl font-bold bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white p-4 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 active:scale-95 transition-transform">0</button>
+            <button onclick="appendValue('.')" class="calculator-btn text-2xl font-bold bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white p-4 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 active:scale-95 transition-transform">.</button>
+            <button onclick="calculateResult()" class="calculator-btn text-2xl font-bold bg-green-500 text-white p-4 rounded-lg hover:bg-green-600 active:scale-95 transition-transform">=</button>
+        </div>
+    </div>
+
+    <script>
+        // Mendapatkan elemen display dari HTML
+        const display = document.getElementById('display');
+
+        // Fungsi untuk menambahkan nilai ke layar display
+        function appendValue(value) {
+            // Jika display menampilkan "Error", hapus dulu sebelum menambahkan nilai baru
+            if (display.value === 'Error') {
+                display.value = '';
+            }
+            display.value += value;
+        }
+
+        // Fungsi untuk membersihkan layar display
+        function clearDisplay() {
+            display.value = '';
+        }
+
+        // Fungsi untuk menghitung hasil dari ekspresi di layar
+        function calculateResult() {
+            try {
+                // Menggunakan fungsi eval() untuk mengevaluasi string matematika
+                // Perhatian: eval() bisa berisiko jika input tidak terkontrol,
+                // namun aman untuk kalkulator sederhana ini.
+                const result = eval(display.value);
+                
+                // Menangani kasus hasil yang tidak valid seperti 1/0 (Infinity)
+                if (!isFinite(result)) {
+                    throw new Error("Hasil tidak valid");
+                }
+
+                display.value = result;
+            } catch (error) {
+                // Jika terjadi error saat kalkulasi (misal: sintaks salah), tampilkan "Error"
+                display.value = 'Error';
+            }
+        }
+
+        // Menambahkan event listener untuk input keyboard
+        document.addEventListener('keydown', function(event) {
+            const key = event.key;
+            // Memastikan key yang ditekan adalah angka, operator, atau tombol yang relevan
+            if (/[0-9]/.test(key)) {
+                appendValue(key);
+            } else if (['+', '-', '*', '/', '.', '(', ')'].includes(key)) {
+                appendValue(key);
+            } else if (key === 'Enter' || key === '=') {
+                event.preventDefault(); // Mencegah aksi default tombol Enter
+                calculateResult();
+            } else if (key === 'Backspace') {
+                // Fungsi untuk menghapus karakter terakhir
+                display.value = display.value.slice(0, -1);
+            } else if (key.toLowerCase() === 'c') {
+                clearDisplay();
+            }
+        });
+
+    </script>
+
+    <script>
+        // Autosave kalkulator ke localStorage setiap 2 detik dan saat meninggalkan halaman
+        (function() {
+            const KEY = 'kalkulator_display';
+            const displayEl = document.getElementById('display');
+
+            function saveDisplay() {
+                try {
+                    if (displayEl) localStorage.setItem(KEY, displayEl.value);
+                } catch (e) { /* ignore storage errors */ }
+            }
+
+            function loadDisplay() {
+                try {
+                    const v = localStorage.getItem(KEY);
+                    if (v !== null && displayEl) displayEl.value = v;
+                } catch (e) { /* ignore */ }
+            }
+
+            // Update saved state when user types (covers keyboard input handlers)
+            if (displayEl) {
+                displayEl.addEventListener('input', saveDisplay);
+            }
+
+            // Periodic autosave (failsafe)
+            setInterval(saveDisplay, 2000);
+
+            // Save before unload
+            window.addEventListener('beforeunload', saveDisplay);
+
+            // Load on startup
+            window.addEventListener('load', loadDisplay);
+        })();
+    </script>
+
+</body>
+</html>
