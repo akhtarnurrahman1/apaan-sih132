@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game Tebak Angka</title>
+    <!--
+      Menggunakan Tailwind CSS untuk styling.
+      Ini membantu membuat tata letak dan desain yang responsif.
+    -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #1a202c; /* Warna latar belakang gelap */
+            color: #e2e8f0; /* Warna teks terang */
+        }
+        .game-section {
+            background-color: #2d3748; /* Warna latar belakang bagian game */
+            border-radius: 1rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        .game-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #cbd5e0;
+        }
+        .btn {
+            @apply px-4 py-2 rounded-lg font-semibold transition-all duration-300 transform hover:scale-105;
+        }
+        .btn-blue {
+            @apply bg-blue-600 text-white hover:bg-blue-700;
+        }
+        .btn-red {
+            @apply bg-red-600 text-white hover:bg-red-700;
+        }
+        .message {
+            @apply mt-4 p-3 rounded-lg text-center font-medium;
+        }
+        .message.success {
+            @apply bg-green-800 text-green-100;
+        }
+        .message.fail {
+            @apply bg-red-800 text-red-100;
+        }
+        .message.info {
+            @apply bg-blue-800 text-blue-100;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-200 p-8 flex items-center justify-center min-h-screen">
+    
+    <!-- Game Tebak Angka -->
+    <main class="w-full max-w-xl mx-auto space-y-12">
+        <header class="text-center mb-12">
+            <h1 class="text-4xl sm:text-5xl font-extrabold text-blue-500 tracking-tight">Game Tebak Angka</h1>
+        </header>
+        <div id="guess-the-number-game" class="game-section p-6">
+            <h2 class="game-title mb-4 text-center">Tebak Angka</h2>
+            <div class="flex flex-col items-center space-y-4">
+                <p id="guess-number-instruction" class="text-center">Saya telah memilih sebuah angka antara 1 dan 100. Coba tebak!</p>
+                <div class="flex items-center space-x-2">
+                    <input type="number" id="guess-input" min="1" max="100" class="w-24 p-2 rounded-lg bg-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <button id="guess-button" class="btn btn-blue">Tebak</button>
+                    <button id="guess-reset-button" class="btn btn-red">Ulang</button>
+                </div>
+                <div id="guess-message" class="message w-full max-w-sm hidden"></div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // ==========================================================
+        // Logika untuk Game Tebak Angka
+        // ==========================================================
+        const guessInput = document.getElementById('guess-input');
+        const guessButton = document.getElementById('guess-button');
+        const guessResetButton = document.getElementById('guess-reset-button');
+        const guessMessage = document.getElementById('guess-message');
+        const guessInstruction = document.getElementById('guess-number-instruction');
+
+        let randomNumber;
+        let attempts = 0;
+
+        function initGuessGame() {
+            // Memilih angka acak antara 1 dan 100
+            randomNumber = Math.floor(Math.random() * 100) + 1;
+            attempts = 0;
+            guessMessage.textContent = '';
+            guessMessage.classList.add('hidden');
+            guessInput.value = '';
+            guessButton.disabled = false;
+            guessInstruction.textContent = 'Saya telah memilih sebuah angka antara 1 dan 100. Coba tebak!';
+        }
+
+        guessButton.addEventListener('click', () => {
+            const userGuess = parseInt(guessInput.value, 10);
+            if (isNaN(userGuess) || userGuess < 1 || userGuess > 100) {
+                guessMessage.textContent = 'Mohon masukkan angka valid antara 1 dan 100.';
+                guessMessage.className = 'message fail';
+                guessMessage.classList.remove('hidden');
+                return;
+            }
+
+            attempts++;
+            guessMessage.classList.remove('hidden', 'success', 'fail', 'info');
+
+            if (userGuess === randomNumber) {
+                guessMessage.textContent = `Selamat! Anda berhasil menebak angka ${randomNumber} dalam ${attempts} percobaan.`;
+                guessMessage.classList.add('success');
+                guessButton.disabled = true;
+                guessInstruction.textContent = 'Permainan selesai!';
+            } else if (userGuess < randomNumber) {
+                guessMessage.textContent = 'Terlalu rendah! Coba lagi.';
+                guessMessage.classList.add('info');
+            } else {
+                guessMessage.textContent = 'Terlalu tinggi! Coba lagi.';
+                guessMessage.classList.add('info');
+            }
+        });
+
+        guessResetButton.addEventListener('click', initGuessGame);
+
+        // Inisialisasi game saat halaman dimuat
+        initGuessGame();
+    </script>
+</body>
+</html>

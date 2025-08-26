@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game Batu, Gunting, Kertas</title>
+    <!--
+      Menggunakan Tailwind CSS untuk styling.
+      Ini membantu membuat tata letak dan desain yang responsif.
+    -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #1a202c; /* Warna latar belakang gelap */
+            color: #e2e8f0; /* Warna teks terang */
+        }
+        .game-section {
+            background-color: #2d3748; /* Warna latar belakang bagian game */
+            border-radius: 1rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        .game-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #cbd5e0;
+        }
+        .btn {
+            @apply px-6 py-3 rounded-xl font-bold transition-all duration-300 transform hover:scale-105;
+        }
+        .btn-choice {
+            background-image: linear-gradient(to right, #4c51bf, #6b46c1); /* Gradien warna untuk tombol pilihan */
+            @apply text-white shadow-lg hover:shadow-xl;
+        }
+        .btn-red {
+            @apply bg-red-600 text-white hover:bg-red-700;
+        }
+        .message {
+            @apply mt-4 p-3 rounded-lg text-center font-medium;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-200 p-8 flex items-center justify-center min-h-screen">
+    
+    <!-- Game Batu, Gunting, Kertas -->
+    <main class="w-full max-w-xl mx-auto space-y-12">
+        <header class="text-center mb-12">
+            <h1 class="text-4xl sm:text-5xl font-extrabold text-blue-500 tracking-tight">Game Batu, Gunting, Kertas</h1>
+        </header>
+        <div id="rock-paper-scissors-game" class="game-section p-6">
+            <h2 class="game-title mb-4 text-center">Batu, Gunting, Kertas</h2>
+            <div class="flex flex-col items-center space-y-4">
+                <div class="flex space-x-4">
+                    <button id="rock-btn" class="btn btn-choice">Batu 🗿</button>
+                    <button id="paper-btn" class="btn btn-choice">Kertas 📄</button>
+                    <button id="scissors-btn" class="btn btn-choice">Gunting ✂️</button>
+                </div>
+                <p id="rps-result-message" class="text-lg font-medium text-center"></p>
+                <button id="rps-reset-button" class="btn btn-red hidden">Ulang</button>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // ==========================================================
+        // Logika untuk Game Batu, Gunting, Kertas
+        // ==========================================================
+        const rpsChoices = ['batu', 'kertas', 'gunting'];
+        const rpsButtons = document.querySelectorAll('#rock-paper-scissors-game .btn-choice');
+        const rpsResultMessage = document.getElementById('rps-result-message');
+        const rpsResetButton = document.getElementById('rps-reset-button');
+
+        function getComputerChoice() {
+            // Memilih pilihan komputer secara acak
+            const randomIndex = Math.floor(Math.random() * 3);
+            return rpsChoices[randomIndex];
+        }
+
+        function determineRpsWinner(playerChoice, computerChoice) {
+            if (playerChoice === computerChoice) {
+                return 'Seri!';
+            } else if (
+                (playerChoice === 'batu' && computerChoice === 'gunting') ||
+                (playerChoice === 'kertas' && computerChoice === 'batu') ||
+                (playerChoice === 'gunting' && computerChoice === 'kertas')
+            ) {
+                return 'Anda Menang!';
+            } else {
+                return 'Anda Kalah!';
+            }
+        }
+
+        rpsButtons.forEach(button => {
+            button.addEventListener('click', (event) => {
+                const playerChoice = event.target.id.replace('-btn', '');
+                const computerChoice = getComputerChoice();
+                const result = determineRpsWinner(playerChoice, computerChoice);
+                
+                // Menampilkan pilihan dan hasil
+                const playerChoiceText = event.target.textContent.trim();
+                let computerChoiceText = '';
+                if (computerChoice === 'batu') computerChoiceText = 'Batu 🗿';
+                if (computerChoice === 'kertas') computerChoiceText = 'Kertas 📄';
+                if (computerChoice === 'gunting') computerChoiceText = 'Gunting ✂️';
+
+                rpsResultMessage.innerHTML = `Anda memilih: ${playerChoiceText}<br>Komputer memilih: ${computerChoiceText}<br><strong>Hasil: ${result}</strong>`;
+                rpsButtons.forEach(btn => btn.disabled = true);
+                rpsResetButton.classList.remove('hidden');
+            });
+        });
+
+        rpsResetButton.addEventListener('click', () => {
+            rpsButtons.forEach(btn => btn.disabled = false);
+            rpsResultMessage.textContent = '';
+            rpsResetButton.classList.add('hidden');
+        });
+    </script>
+</body>
+</html>

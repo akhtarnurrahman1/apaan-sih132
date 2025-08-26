@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game Memori</title>
+    <!--
+      Menggunakan Tailwind CSS untuk styling.
+      Ini membantu membuat tata letak dan desain yang responsif.
+    -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #1a202c; /* Warna latar belakang gelap */
+            color: #e2e8f0; /* Warna teks terang */
+        }
+        .game-section {
+            background-color: #2d3748; /* Warna latar belakang bagian game */
+            border-radius: 1rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        .game-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #cbd5e0;
+        }
+        .btn {
+            @apply px-4 py-2 rounded-lg font-semibold transition-all duration-300 transform hover:scale-105;
+        }
+        .btn-red {
+            @apply bg-red-600 text-white hover:bg-red-700;
+        }
+        /* Style untuk Game Memori */
+        #memory-board {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 0.5rem;
+            width: 100%;
+            max-width: 20rem;
+        }
+        .memory-card {
+            background-color: #4a5568;
+            border-radius: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 4rem;
+            height: 4rem;
+            font-size: 2rem;
+            cursor: pointer;
+            transition: transform 0.3s;
+            transform-style: preserve-3d;
+            position: relative;
+        }
+        .memory-card.flipped {
+            transform: rotateY(180deg);
+        }
+        .card-inner {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transform-style: preserve-3d;
+        }
+        .card-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .card-front {
+            background-color: #4a5568;
+        }
+        .card-back {
+            background-color: #a0aec0;
+            color: #2d3748;
+            transform: rotateY(180deg);
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-200 p-8 flex items-center justify-center min-h-screen">
+
+    <!-- Game Memori -->
+    <main class="w-full max-w-xl mx-auto space-y-12">
+        <header class="text-center mb-12">
+            <h1 class="text-4xl sm:text-5xl font-extrabold text-blue-500 tracking-tight">Game Memori</h1>
+        </header>
+        <div id="memory-game" class="game-section p-6 flex flex-col items-center">
+            <h2 class="game-title mb-4">Game Memori</h2>
+            <div id="memory-board" class="mb-4">
+                <!-- Kartu-kartu game akan dibuat oleh JavaScript -->
+            </div>
+            <p id="memory-message" class="text-xl font-bold mb-4 text-center"></p>
+            <button id="memory-reset-button" class="btn btn-red">Ulang Permainan</button>
+        </div>
+    </main>
+
+    <script>
+        // ==========================================================
+        // Logika untuk Game Memori
+        // ==========================================================
+        const memoryBoard = document.getElementById('memory-board');
+        const memoryMessage = document.getElementById('memory-message');
+        const memoryResetButton = document.getElementById('memory-reset-button');
+        const memoryEmojis = ['⭐', '🍒', '🍓', '🍋', '🍇', '🍉', '🔔', '🎰'];
+        let memoryCards = [];
+        let firstCard = null;
+        let secondCard = null;
+        let lockBoard = false;
+        let matchesFound = 0;
+
+        function shuffle(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        function createMemoryCards() {
+            const cardValues = shuffle([...memoryEmojis, ...memoryEmojis]);
+            memoryBoard.innerHTML = '';
+            memoryCards = [];
+
+            cardValues.forEach((value, index) => {
+                const cardElement = document.createElement('div');
+                cardElement.classList.add('memory-card');
+                cardElement.setAttribute('data-value', value);
+                cardElement.setAttribute('data-index', index);
+
+                const cardInner = document.createElement('div');
+                cardInner.classList.add('card-inner');
+
+                const cardFront = document.createElement('div');
+                cardFront.classList.add('card-face', 'card-front');
+
+                const cardBack = document.createElement('div');
+                cardBack.classList.add('card-face', 'card-back');
+                cardBack.textContent = value;
+
+                cardInner.appendChild(cardFront);
+                cardInner.appendChild(cardBack);
+                cardElement.appendChild(cardInner);
+
+                cardElement.addEventListener('click', handleMemoryCardClick);
+                memoryBoard.appendChild(cardElement);
+                memoryCards.push(cardElement);
+            });
+        }
+
+        function handleMemoryCardClick(event) {
+            if (lockBoard) return;
+            const clickedCard = event.currentTarget;
+            if (clickedCard === firstCard) return;
+
+            clickedCard.classList.add('flipped');
+
+            if (!firstCard) {
+                firstCard = clickedCard;
+                return;
+            }
+
+            secondCard = clickedCard;
+            checkForMatch();
+        }
+
+        function checkForMatch() {
+            const isMatch = firstCard.getAttribute('data-value') === secondCard.getAttribute('data-value');
+            if (isMatch) {
+                disableCards();
+                matchesFound++;
+                if (matchesFound === memoryEmojis.length) {
+                    memoryMessage.textContent = 'Selamat! Anda Menemukan Semua Pasangan!';
+                }
+            } else {
+                unflipCards();
+            }
+        }
+
+        function disableCards() {
+            firstCard.removeEventListener('click', handleMemoryCardClick);
+            secondCard.removeEventListener('click', handleMemoryCardClick);
+            resetBoard();
+        }
+
+        function unflipCards() {
+            lockBoard = true;
+            setTimeout(() => {
+                firstCard.classList.remove('flipped');
+                secondCard.classList.remove('flipped');
+                resetBoard();
+            }, 1000);
+        }
+
+        function resetBoard() {
+            [firstCard, secondCard, lockBoard] = [null, null, false];
+        }
+
+        function initMemoryGame() {
+            matchesFound = 0;
+            memoryMessage.textContent = '';
+            createMemoryCards();
+        }
+
+        memoryResetButton.addEventListener('click', initMemoryGame);
+        initMemoryGame();
+    </script>
+</body>
+</html>
