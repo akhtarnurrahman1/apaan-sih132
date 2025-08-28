@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HTML File Reader</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        h1 {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+            font-size: 2.5rem;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .upload-section {
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .upload-section:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+        }
+
+        .file-input-wrapper {
+            position: relative;
+            display: inline-block;
+            cursor: pointer;
+            margin-bottom: 20px;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .file-input-label {
+            display: inline-block;
+            padding: 15px 30px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            font-size: 16px;
+        }
+
+        .file-input-label:hover {
+            transform: scale(1.05);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .file-info {
+            margin-top: 15px;
+            padding: 10px;
+            background: rgba(102, 126, 234, 0.1);
+            border-radius: 10px;
+            display: none;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .btn {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            font-size: 14px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(45deg, #4CAF50, #45a049);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a52);
+            color: white;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .preview-section {
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .preview-header {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            padding: 15px 25px;
+            font-weight: 600;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .view-tabs {
+            display: flex;
+            gap: 10px;
+        }
+
+        .tab-btn {
+            padding: 8px 16px;
+            border: none;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 12px;
+        }
+
+        .tab-btn.active {
+            background: white;
+            color: #667eea;
+        }
+
+        .preview-content {
+            min-height: 400px;
+            position: relative;
+        }
+
+        .code-view {
+            padding: 25px;
+            background: #f8f9fa;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            max-height: 600px;
+            overflow-y: auto;
+            border-left: 4px solid #667eea;
+        }
+
+        .html-view {
+            padding: 0;
+            min-height: 400px;
+        }
+
+        .html-view iframe {
+            width: 100%;
+            min-height: 400px;
+            border: none;
+            background: white;
+        }
+
+        .no-file {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 400px;
+            color: #666;
+            font-size: 18px;
+        }
+
+        .no-file-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+            color: #ddd;
+        }
+
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 400px;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error-message {
+            background: #ffe6e6;
+            color: #d63031;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px;
+            border-left: 4px solid #d63031;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+            }
+
+            h1 {
+                font-size: 2rem;
+            }
+
+            .controls {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .view-tabs {
+                flex-wrap: wrap;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📄 HTML File Reader</h1>
+        
+        <div class="upload-section">
+            <div class="file-input-wrapper">
+                <input type="file" id="htmlFile" class="file-input" accept=".html,.htm" />
+                <label for="htmlFile" class="file-input-label">
+                    📁 Pilih File HTML
+                </label>
+            </div>
+            <div id="fileInfo" class="file-info">
+                <strong>File terpilih:</strong> <span id="fileName"></span><br>
+                <strong>Ukuran:</strong> <span id="fileSize"></span>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button id="loadBtn" class="btn btn-primary" disabled>📖 Baca File</button>
+            <button id="clearBtn" class="btn btn-secondary" disabled>🗑️ Hapus</button>
+        </div>
+
+        <div class="preview-section">
+            <div class="preview-header">
+                <span>Preview HTML</span>
+                <div class="view-tabs">
+                    <button class="tab-btn active" data-view="render">🎨 Rendered</button>
+                    <button class="tab-btn" data-view="code">📝 Source Code</button>
+                </div>
+            </div>
+            
+            <div class="preview-content">
+                <div id="noFile" class="no-file">
+                    <div class="no-file-icon">📄</div>
+                    <div>Belum ada file HTML yang dipilih</div>
+                    <div style="font-size: 14px; margin-top: 10px; color: #999;">
+                        Pilih file HTML untuk melihat preview
+                    </div>
+                </div>
+                
+                <div id="loading" class="loading" style="display: none;">
+                    <div class="spinner"></div>
+                </div>
+                
+                <div id="codeView" class="code-view" style="display: none;"></div>
+                <div id="htmlView" class="html-view" style="display: none;"></div>
+                <div id="errorView" class="error-message" style="display: none;"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentFile = null;
+        let currentContent = '';
+        let currentView = 'render';
+
+        // DOM Elements
+        const fileInput = document.getElementById('htmlFile');
+        const fileInfo = document.getElementById('fileInfo');
+        const fileName = document.getElementById('fileName');
+        const fileSize = document.getElementById('fileSize');
+        const loadBtn = document.getElementById('loadBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const tabBtns = document.querySelectorAll('.tab-btn');
+        const noFileView = document.getElementById('noFile');
+        const loadingView = document.getElementById('loading');
+        const codeView = document.getElementById('codeView');
+        const htmlView = document.getElementById('htmlView');
+        const errorView = document.getElementById('errorView');
+
+        // File input change handler
+        fileInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                currentFile = file;
+                fileName.textContent = file.name;
+                fileSize.textContent = formatFileSize(file.size);
+                fileInfo.style.display = 'block';
+                loadBtn.disabled = false;
+                clearBtn.disabled = false;
+            }
+        });
+
+        // Load button handler
+        loadBtn.addEventListener('click', function() {
+            if (currentFile) {
+                loadHtmlFile();
+            }
+        });
+
+        // Clear button handler
+        clearBtn.addEventListener('click', function() {
+            clearAll();
+        });
+
+        // Tab buttons handler
+        tabBtns.forEach(btn => {
+            btn.addEventListener('click', function() {
+                const view = this.dataset.view;
+                switchView(view);
+            });
+        });
+
+        // Load HTML file
+        function loadHtmlFile() {
+            if (!currentFile) return;
+
+            showLoading();
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    currentContent = e.target.result;
+                    displayContent();
+                } catch (error) {
+                    showError('Error membaca file: ' + error.message);
+                }
+            };
+            
+            reader.onerror = function() {
+                showError('Error membaca file HTML');
+            };
+            
+            reader.readAsText(currentFile);
+        }
+
+        // Display content based on current view
+        function displayContent() {
+            hideAllViews();
+            
+            if (currentView === 'code') {
+                codeView.textContent = currentContent;
+                codeView.style.display = 'block';
+            } else {
+                // Create iframe for rendered view
+                const iframe = document.createElement('iframe');
+                iframe.style.width = '100%';
+                iframe.style.minHeight = '400px';
+                iframe.style.border = 'none';
+                iframe.style.background = 'white';
+                
+                htmlView.innerHTML = '';
+                htmlView.appendChild(iframe);
+                
+                // Write content to iframe
+                const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+                iframeDoc.open();
+                iframeDoc.write(currentContent);
+                iframeDoc.close();
+                
+                htmlView.style.display = 'block';
+            }
+        }
+
+        // Switch view
+        function switchView(view) {
+            currentView = view;
+            
+            // Update active tab
+            tabBtns.forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.dataset.view === view) {
+                    btn.classList.add('active');
+                }
+            });
+            
+            // Display content if available
+            if (currentContent) {
+                displayContent();
+            }
+        }
+
+        // Show loading
+        function showLoading() {
+            hideAllViews();
+            loadingView.style.display = 'flex';
+        }
+
+        // Show error
+        function showError(message) {
+            hideAllViews();
+            errorView.textContent = message;
+            errorView.style.display = 'block';
+        }
+
+        // Hide all views
+        function hideAllViews() {
+            noFileView.style.display = 'none';
+            loadingView.style.display = 'none';
+            codeView.style.display = 'none';
+            htmlView.style.display = 'none';
+            errorView.style.display = 'none';
+        }
+
+        // Clear all
+        function clearAll() {
+            currentFile = null;
+            currentContent = '';
+            fileInput.value = '';
+            fileInfo.style.display = 'none';
+            loadBtn.disabled = true;
+            clearBtn.disabled = true;
+            
+            hideAllViews();
+            noFileView.style.display = 'flex';
+        }
+
+        // Format file size
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        // Drag and drop functionality
+        const uploadSection = document.querySelector('.upload-section');
+        
+        uploadSection.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            this.style.backgroundColor = 'rgba(102, 126, 234, 0.1)';
+            this.style.transform = 'scale(1.02)';
+        });
+        
+        uploadSection.addEventListener('dragleave', function(e) {
+            e.preventDefault();
+            this.style.backgroundColor = 'rgba(255, 255, 255, 0.9)';
+            this.style.transform = 'translateY(0)';
+        });
+        
+        uploadSection.addEventListener('drop', function(e) {
+            e.preventDefault();
+            this.style.backgroundColor = 'rgba(255, 255, 255, 0.9)';
+            this.style.transform = 'translateY(0)';
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0 && files[0].name.match(/\.(html|htm)$/i)) {
+                currentFile = files[0];
+                fileName.textContent = currentFile.name;
+                fileSize.textContent = formatFileSize(currentFile.size);
+                fileInfo.style.display = 'block';
+                loadBtn.disabled = false;
+                clearBtn.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>
