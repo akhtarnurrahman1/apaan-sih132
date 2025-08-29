@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manajer Anggaran Pribadi</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f2f5;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        /* Custom scrollbar for transaction list */
+        #transaction-list::-webkit-scrollbar {
+            width: 8px;
+        }
+        #transaction-list::-webkit-scrollbar-track {
+            background: #e0e0e0;
+            border-radius: 10px;
+        }
+        #transaction-list::-webkit-scrollbar-thumb {
+            background: #a0a0a0;
+            border-radius: 10px;
+        }
+        #transaction-list::-webkit-scrollbar-thumb:hover {
+            background: #808080;
+        }
+        .card {
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08);
+            border-radius: 0.75rem; /* rounded-xl */
+        }
+        .btn-primary {
+            @apply bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition duration-300 ease-in-out;
+        }
+        .btn-delete {
+            @apply bg-red-600 hover:bg-red-700 text-white font-semibold py-1 px-3 rounded-md shadow-sm transition duration-300 ease-in-out text-sm;
+        }
+        .income {
+            border-right: 5px solid #22c55e; /* green-500 */
+        }
+        .expense {
+            border-right: 5px solid #ef4444; /* red-500 */
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex flex-col items-center p-4 min-h-screen">
+    <header class="w-full max-w-3xl text-center py-8">
+        <h1 class="text-5xl font-extrabold text-teal-800 tracking-tight leading-tight">Manajer Anggaran Pribadi</h1>
+        <p class="mt-2 text-lg text-gray-600">Lacak pendapatan dan pengeluaran Anda dengan mudah.</p>
+    </header>
+
+    <main class="w-full max-w-3xl bg-white rounded-xl shadow-2xl p-6 md:p-8 space-y-8 mb-8">
+        <!-- Ringkasan Anggaran -->
+        <section id="summary-section" class="bg-gradient-to-br from-blue-50 to-indigo-50 p-6 rounded-lg card">
+            <h2 class="text-3xl font-bold text-teal-700 mb-6 text-center">Ringkasan Anggaran</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
+                <div class="bg-white p-4 rounded-lg shadow-sm border border-blue-100">
+                    <h3 class="text-lg font-medium text-gray-600">Saldo Saat Ini</h3>
+                    <p id="balance" class="text-3xl font-bold text-gray-800 mt-1">Rp 0</p>
+                </div>
+                <div class="bg-white p-4 rounded-lg shadow-sm border border-green-100">
+                    <h3 class="text-lg font-medium text-gray-600">Total Pendapatan</h3>
+                    <p id="total-income" class="text-3xl font-bold text-green-600 mt-1">Rp 0</p>
+                </div>
+                <div class="bg-white p-4 rounded-lg shadow-sm border border-red-100">
+                    <h3 class="text-lg font-medium text-gray-600">Total Pengeluaran</h3>
+                    <p id="total-expenses" class="text-3xl font-bold text-red-600 mt-1">Rp 0</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Form untuk Menambahkan Transaksi -->
+        <section id="add-transaction-section" class="border border-gray-200 rounded-lg p-6 bg-gradient-to-br from-green-50 to-blue-50">
+            <h2 class="text-3xl font-bold text-teal-700 mb-6 text-center">Tambahkan Transaksi Baru</h2>
+            <form id="transaction-form" class="space-y-5">
+                <div>
+                    <label for="description" class="block text-lg font-medium text-gray-700 mb-2">Deskripsi</label>
+                    <input type="text" id="description" name="description" placeholder="Deskripsi transaksi..." required
+                           class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-green-500 focus:border-green-500 text-lg">
+                </div>
+                <div>
+                    <label for="amount" class="block text-lg font-medium text-gray-700 mb-2">Jumlah (Rp)</label>
+                    <input type="number" id="amount" name="amount" placeholder="Contoh: 500000" min="0" required
+                           class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-green-500 focus:border-green-500 text-lg">
+                </div>
+                <div>
+                    <label for="type" class="block text-lg font-medium text-gray-700 mb-2">Jenis</label>
+                    <select id="type" name="type" required
+                            class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-green-500 focus:border-green-500 text-lg bg-white">
+                        <option value="income">Pendapatan</option>
+                        <option value="expense">Pengeluaran</option>
+                    </select>
+                </div>
+                <div class="flex justify-end">
+                    <button type="submit" class="btn-primary flex items-center justify-center">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        Tambahkan Transaksi
+                    </button>
+                </div>
+            </form>
+        </section>
+
+        <!-- Daftar Transaksi dan Filter -->
+        <section id="transactions-list-section">
+            <h2 class="text-3xl font-bold text-teal-700 mb-6 text-center">Daftar Transaksi</h2>
+            <div class="mb-4 flex flex-col sm:flex-row justify-between items-center space-y-3 sm:space-y-0 sm:space-x-4">
+                <label for="filter-type" class="text-lg font-medium text-gray-700">Filter berdasarkan Jenis:</label>
+                <select id="filter-type"
+                        class="mt-1 block w-full sm:w-auto px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-lg bg-white">
+                    <option value="all">Semua</option>
+                    <option value="income">Pendapatan</option>
+                    <option value="expense">Pengeluaran</option>
+                </select>
+            </div>
+            <div id="transaction-list" class="space-y-4 max-h-[50vh] overflow-y-auto pr-2">
+                <!-- Transaksi akan dimuat di sini oleh JavaScript -->
+                <p id="no-transactions-message" class="text-gray-500 text-center text-lg hidden">Belum ada transaksi. Tambahkan yang pertama!</p>
+            </div>
+        </section>
+    </main>
+
+    <footer class="w-full max-w-3xl text-center py-6 text-gray-500 text-sm">
+        <p>&copy; 2025 Manajer Anggaran Pribadi. Dibuat dengan &hearts;.</p>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const transactionForm = document.getElementById('transaction-form');
+            const descriptionInput = document.getElementById('description');
+            const amountInput = document.getElementById('amount');
+            const typeInput = document.getElementById('type');
+            const balanceDisplay = document.getElementById('balance');
+            const totalIncomeDisplay = document.getElementById('total-income');
+            const totalExpensesDisplay = document.getElementById('total-expenses');
+            const transactionListContainer = document.getElementById('transaction-list');
+            const filterTypeSelect = document.getElementById('filter-type');
+            const noTransactionsMessage = document.getElementById('no-transactions-message');
+
+            let transactions = JSON.parse(localStorage.getItem('budgetTransactions')) || [];
+
+            // Fungsi untuk format mata uang
+            const formatCurrency = (amount) => {
+                return new Intl.NumberFormat('id-ID', {
+                    style: 'currency',
+                    currency: 'IDR',
+                    minimumFractionDigits: 0
+                }).format(amount);
+            };
+
+            // Fungsi untuk menambahkan transaksi baru
+            const addTransaction = (event) => {
+                event.preventDefault();
+
+                const description = descriptionInput.value.trim();
+                const amount = parseFloat(amountInput.value);
+                const type = typeInput.value;
+
+                if (!description || isNaN(amount) || amount <= 0) {
+                    console.error("Deskripsi dan jumlah harus valid.");
+                    return;
+                }
+
+                const newTransaction = {
+                    id: crypto.randomUUID(),
+                    description,
+                    amount,
+                    type,
+                    timestamp: new Date().toISOString()
+                };
+
+                transactions.unshift(newTransaction); // Tambahkan di awal agar yang terbaru muncul lebih dulu
+                localStorage.setItem('budgetTransactions', JSON.stringify(transactions));
+                renderTransactions();
+                updateSummary();
+                transactionForm.reset();
+            };
+
+            // Fungsi untuk menghapus transaksi
+            const deleteTransaction = (id) => {
+                if (confirm('Apakah Anda yakin ingin menghapus transaksi ini?')) { // Gunakan modal kustom di produksi
+                    transactions = transactions.filter(transaction => transaction.id !== id);
+                    localStorage.setItem('budgetTransactions', JSON.stringify(transactions));
+                    renderTransactions();
+                    updateSummary();
+                }
+            };
+
+            // Fungsi untuk membuat elemen daftar transaksi
+            const createTransactionElement = (transaction) => {
+                const transactionItem = document.createElement('div');
+                transactionItem.id = `transaction-${transaction.id}`;
+                transactionItem.className = `flex justify-between items-center bg-white p-4 rounded-lg shadow-sm border border-gray-200 ${transaction.type}`;
+
+                const sign = transaction.type === 'income' ? '+' : '-';
+                const textColor = transaction.type === 'income' ? 'text-green-600' : 'text-red-600';
+
+                transactionItem.innerHTML = `
+                    <div>
+                        <p class="text-lg font-medium text-gray-800">${transaction.description}</p>
+                        <p class="text-sm text-gray-500">${new Date(transaction.timestamp).toLocaleDateString('id-ID')}</p>
+                    </div>
+                    <div class="flex items-center space-x-3">
+                        <span class="text-lg font-semibold ${textColor}">${sign} ${formatCurrency(transaction.amount)}</span>
+                        <button class="btn-delete" data-id="${transaction.id}">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                        </button>
+                    </div>
+                `;
+
+                transactionItem.querySelector('.btn-delete').addEventListener('click', () => deleteTransaction(transaction.id));
+                return transactionItem;
+            };
+
+            // Fungsi untuk menampilkan transaksi
+            const renderTransactions = () => {
+                const filterType = filterTypeSelect.value;
+                transactionListContainer.innerHTML = '';
+                const filteredTransactions = transactions.filter(transaction => {
+                    return filterType === 'all' || transaction.type === filterType;
+                });
+
+                if (filteredTransactions.length === 0) {
+                    noTransactionsMessage.classList.remove('hidden');
+                } else {
+                    noTransactionsMessage.classList.add('hidden');
+                    filteredTransactions.forEach(transaction => {
+                        const transactionElement = createTransactionElement(transaction);
+                        transactionListContainer.appendChild(transactionElement);
+                    });
+                }
+            };
+
+            // Fungsi untuk memperbarui ringkasan anggaran
+            const updateSummary = () => {
+                const totalIncome = transactions
+                    .filter(t => t.type === 'income')
+                    .reduce((acc, t) => acc + t.amount, 0);
+
+                const totalExpenses = transactions
+                    .filter(t => t.type === 'expense')
+                    .reduce((acc, t) => acc + t.amount, 0);
+
+                const balance = totalIncome - totalExpenses;
+
+                balanceDisplay.textContent = formatCurrency(balance);
+                totalIncomeDisplay.textContent = formatCurrency(totalIncome);
+                totalExpensesDisplay.textContent = formatCurrency(totalExpenses);
+
+                // Update balance color based on value
+                if (balance < 0) {
+                    balanceDisplay.classList.remove('text-gray-800');
+                    balanceDisplay.classList.add('text-red-600');
+                } else {
+                    balanceDisplay.classList.remove('text-red-600');
+                    balanceDisplay.classList.add('text-gray-800');
+                }
+            };
+
+            // Event listeners
+            transactionForm.addEventListener('submit', addTransaction);
+            filterTypeSelect.addEventListener('change', renderTransactions);
+
+            // Muat data saat halaman dimuat
+            renderTransactions();
+            updateSummary();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jurnal Harian Saya</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f2f5;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        /* Custom scrollbar for entries container */
+        #entries-container::-webkit-scrollbar {
+            width: 8px;
+        }
+        #entries-container::-webkit-scrollbar-track {
+            background: #e0e0e0;
+            border-radius: 10px;
+        }
+        #entries-container::-webkit-scrollbar-thumb {
+            background: #a0a0a0;
+            border-radius: 10px;
+        }
+        #entries-container::-webkit-scrollbar-thumb:hover {
+            background: #808080;
+        }
+        .journal-card {
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08);
+            transition: transform 0.2s ease-in-out;
+        }
+        .journal-card:hover {
+            transform: translateY(-5px);
+        }
+        .btn-primary {
+            @apply bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition duration-300 ease-in-out;
+        }
+        .btn-secondary {
+            @apply bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold py-2 px-4 rounded-lg shadow-md transition duration-300 ease-in-out;
+        }
+        .btn-edit {
+            @apply bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-1 px-3 rounded-md shadow-sm transition duration-300 ease-in-out text-sm;
+        }
+        .btn-delete {
+            @apply bg-red-600 hover:bg-red-700 text-white font-semibold py-1 px-3 rounded-md shadow-sm transition duration-300 ease-in-out text-sm;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex flex-col items-center p-4 min-h-screen">
+    <header class="w-full max-w-4xl text-center py-8">
+        <h1 class="text-5xl font-extrabold text-blue-800 tracking-tight leading-tight">Jurnal Harian Saya</h1>
+        <p class="mt-2 text-lg text-gray-600">Catat pemikiran, pengalaman, dan ide Anda setiap hari.</p>
+    </header>
+
+    <main class="w-full max-w-4xl bg-white rounded-xl shadow-2xl p-6 md:p-8 space-y-8 mb-8">
+        <!-- Form untuk Menambahkan/Mengedit Entri -->
+        <section id="journal-form-section" class="border border-gray-200 rounded-lg p-6 bg-gradient-to-br from-blue-50 to-indigo-50">
+            <h2 class="text-3xl font-bold text-blue-700 mb-6 text-center">Tulis Entri Baru</h2>
+            <form id="journal-form" class="space-y-5">
+                <div>
+                    <label for="entry-title" class="block text-lg font-medium text-gray-700 mb-2">Judul</label>
+                    <input type="text" id="entry-title" name="entry-title" placeholder="Judul entri Anda..." required
+                           class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-lg">
+                </div>
+                <div>
+                    <label for="entry-content" class="block text-lg font-medium text-gray-700 mb-2">Isi Jurnal</label>
+                    <textarea id="entry-content" name="entry-content" rows="8" placeholder="Apa yang ada di pikiran Anda hari ini?" required
+                              class="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-lg resize-y"></textarea>
+                </div>
+                <div class="flex flex-col sm:flex-row justify-end space-y-3 sm:space-y-0 sm:space-x-4">
+                    <button type="submit" class="btn-primary flex items-center justify-center">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        Simpan Entri
+                    </button>
+                    <button type="button" id="cancel-edit-btn" class="btn-secondary hidden flex items-center justify-center">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                        Batal
+                    </button>
+                </div>
+                <input type="hidden" id="edit-entry-id">
+            </form>
+        </section>
+
+        <!-- Daftar Entri Jurnal -->
+        <section id="entries-list-section">
+            <h2 class="text-3xl font-bold text-blue-700 mb-6 text-center">Entri Jurnal Anda</h2>
+            <div id="entries-container" class="space-y-6 max-h-[60vh] overflow-y-auto pr-2">
+                <!-- Entri jurnal akan dimuat di sini oleh JavaScript -->
+                <p id="no-entries-message" class="text-gray-500 text-center text-lg hidden">Belum ada entri. Mulai tulis yang pertama!</p>
+            </div>
+        </section>
+    </main>
+
+    <footer class="w-full max-w-4xl text-center py-6 text-gray-500 text-sm">
+        <p>&copy; 2025 Jurnal Harian Saya. Dibuat dengan &hearts;.</p>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const journalForm = document.getElementById('journal-form');
+            const entryTitleInput = document.getElementById('entry-title');
+            const entryContentInput = document.getElementById('entry-content');
+            const editEntryIdInput = document.getElementById('edit-entry-id');
+            const entriesContainer = document.getElementById('entries-container');
+            const cancelEditBtn = document.getElementById('cancel-edit-btn');
+            const noEntriesMessage = document.getElementById('no-entries-message');
+
+            let journalEntries = JSON.parse(localStorage.getItem('journalEntries')) || [];
+
+            // Fungsi untuk menyimpan entri ke localStorage
+            const saveEntry = (event) => {
+                event.preventDefault(); // Mencegah refresh halaman
+                const title = entryTitleInput.value.trim();
+                const content = entryContentInput.value.trim();
+                const id = editEntryIdInput.value;
+
+                if (!title || !content) {
+                    // Dalam lingkungan nyata, gunakan modal atau pesan di UI daripada alert()
+                    console.error("Judul dan isi tidak boleh kosong.");
+                    return;
+                }
+
+                const timestamp = new Date().toISOString();
+
+                if (id) {
+                    // Mengedit entri yang sudah ada
+                    const entryIndex = journalEntries.findIndex(entry => entry.id === id);
+                    if (entryIndex !== -1) {
+                        journalEntries[entryIndex] = { ...journalEntries[entryIndex], title, content, lastEdited: timestamp };
+                    }
+                } else {
+                    // Menambahkan entri baru
+                    const newEntry = {
+                        id: crypto.randomUUID(), // ID unik untuk setiap entri
+                        title,
+                        content,
+                        timestamp: timestamp,
+                        lastEdited: timestamp
+                    };
+                    journalEntries.unshift(newEntry); // Tambahkan di awal agar yang terbaru muncul lebih dulu
+                }
+
+                localStorage.setItem('journalEntries', JSON.stringify(journalEntries));
+                renderEntries();
+                clearForm();
+            };
+
+            // Fungsi untuk menampilkan semua entri
+            const renderEntries = () => {
+                entriesContainer.innerHTML = ''; // Kosongkan container sebelum render ulang
+                if (journalEntries.length === 0) {
+                    noEntriesMessage.classList.remove('hidden');
+                } else {
+                    noEntriesMessage.classList.add('hidden');
+                    journalEntries.forEach(entry => {
+                        const entryElement = createEntryCard(entry);
+                        entriesContainer.appendChild(entryElement);
+                    });
+                }
+            };
+
+            // Fungsi untuk membuat elemen kartu entri
+            const createEntryCard = (entry) => {
+                const entryCard = document.createElement('div');
+                entryCard.id = `entry-${entry.id}`;
+                entryCard.className = 'journal-card bg-white p-6 rounded-lg border border-gray-200 relative';
+
+                const formattedDate = new Date(entry.timestamp).toLocaleString('id-ID', {
+                    year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'
+                });
+                const lastEditedDate = new Date(entry.lastEdited).toLocaleString('id-ID', {
+                    year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'
+                });
+
+
+                entryCard.innerHTML = `
+                    <h3 class="text-2xl font-bold text-gray-800 mb-2">${entry.title}</h3>
+                    <p class="text-gray-600 mb-4 whitespace-pre-wrap">${entry.content}</p>
+                    <p class="text-xs text-gray-400 mb-4">Dibuat pada: ${formattedDate}</p>
+                    ${entry.timestamp !== entry.lastEdited ? `<p class="text-xs text-gray-400 mb-4">Terakhir diedit: ${lastEditedDate}</p>` : ''}
+                    <div class="flex space-x-2 mt-4">
+                        <button class="btn-edit flex items-center" data-id="${entry.id}">
+                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                            Edit
+                        </button>
+                        <button class="btn-delete flex items-center" data-id="${entry.id}">
+                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                            Hapus
+                        </button>
+                    </div>
+                `;
+
+                // Tambahkan event listener untuk tombol edit dan hapus
+                entryCard.querySelector('.btn-edit').addEventListener('click', () => editEntry(entry.id));
+                entryCard.querySelector('.btn-delete').addEventListener('click', () => deleteEntry(entry.id));
+
+                return entryCard;
+            };
+
+            // Fungsi untuk mengisi form dengan data entri yang akan diedit
+            const editEntry = (id) => {
+                const entryToEdit = journalEntries.find(entry => entry.id === id);
+                if (entryToEdit) {
+                    entryTitleInput.value = entryToEdit.title;
+                    entryContentInput.value = entryToEdit.content;
+                    editEntryIdInput.value = entryToEdit.id;
+                    cancelEditBtn.classList.remove('hidden'); // Tampilkan tombol batal
+                    window.scrollTo({ top: 0, behavior: 'smooth' }); // Gulir ke atas ke formulir
+                    entryTitleInput.focus();
+                }
+            };
+
+            // Fungsi untuk menghapus entri
+            const deleteEntry = (id) => {
+                // Di sini Anda bisa menambahkan modal konfirmasi sebelum menghapus
+                if (confirm('Apakah Anda yakin ingin menghapus entri ini?')) { // Gunakan modal kustom di produksi
+                    journalEntries = journalEntries.filter(entry => entry.id !== id);
+                    localStorage.setItem('journalEntries', JSON.stringify(journalEntries));
+                    renderEntries();
+                    clearForm(); // Bersihkan form jika entri yang sedang diedit dihapus
+                }
+            };
+
+            // Fungsi untuk membersihkan form
+            const clearForm = () => {
+                journalForm.reset();
+                editEntryIdInput.value = '';
+                cancelEditBtn.classList.add('hidden'); // Sembunyikan tombol batal
+            };
+
+            // Event listener untuk pengiriman form
+            journalForm.addEventListener('submit', saveEntry);
+
+            // Event listener untuk tombol batal edit
+            cancelEditBtn.addEventListener('click', clearForm);
+
+            // Muat entri saat halaman dimuat
+            renderEntries();
+        });
+    </script>
+</body>
+</html>
