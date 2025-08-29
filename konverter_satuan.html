@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Konverter Satuan</title>
+  <!-- Load Tailwind CSS from CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+    /* Custom styles for select arrow appearance */
+    select {
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='currentColor'%3E%3Cpath fill-rule='evenodd' d='M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z' clip-rule='evenodd' /%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 0.75rem center;
+      background-size: 1.5em 1.5em;
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-teal-700 via-emerald-700 to-cyan-700 flex items-center justify-center p-4">
+  <div class="bg-white bg-opacity-95 p-8 rounded-3xl shadow-xl border border-white border-opacity-30 w-full max-w-lg space-y-7 transform hover:scale-105 transition-transform duration-500 ease-in-out backdrop-filter backdrop-blur-lg">
+    <h1 class="text-5xl font-extrabold text-center text-gray-900 mb-6 tracking-tight">Konverter Satuan</h1>
+
+    <!-- Input section -->
+    <div class="space-y-5">
+      <div>
+        <label for="category" class="block text-base font-medium text-gray-700 mb-2">
+          Kategori:
+        </label>
+        <select
+          id="category"
+          class="mt-1 block w-full px-5 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-4 focus:ring-blue-400 focus:border-blue-400 text-xl cursor-pointer bg-white transition-all duration-300 ease-in-out"
+        >
+          <option value="length">Panjang</option>
+          <option value="weight">Berat</option>
+          <option value="temperature">Suhu</option>
+          <option value="volume">Volume</option>
+        </select>
+      </div>
+
+      <div>
+        <label for="amount" class="block text-base font-medium text-gray-700 mb-2">
+          Jumlah:
+        </label>
+        <input
+          type="number"
+          id="amount"
+          value="1"
+          class="mt-1 block w-full px-5 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-4 focus:ring-blue-400 focus:border-blue-400 text-xl placeholder-gray-400 transition-all duration-300 ease-in-out"
+          min="0"
+          step="any"
+          placeholder="Masukkan jumlah"
+        />
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <div>
+          <label for="fromUnit" class="block text-base font-medium text-gray-700 mb-2">
+            Dari Satuan:
+          </label>
+          <select
+            id="fromUnit"
+            class="mt-1 block w-full px-5 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-4 focus:ring-blue-400 focus:border-blue-400 text-xl cursor-pointer bg-white transition-all duration-300 ease-in-out"
+          >
+            <!-- Options will be dynamically loaded by JavaScript -->
+          </select>
+        </div>
+
+        <div>
+          <label for="toUnit" class="block text-base font-medium text-gray-700 mb-2">
+            Ke Satuan:
+          </label>
+          <select
+            id="toUnit"
+            class="mt-1 block w-full px-5 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-4 focus:ring-blue-400 focus:border-blue-400 text-xl cursor-pointer bg-white transition-all duration-300 ease-in-out"
+          >
+            <!-- Options will be dynamically loaded by JavaScript -->
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Display results -->
+    <div id="results" class="mt-8 text-center min-h-[120px] flex items-center justify-center">
+      <!-- Content will be dynamically loaded by JavaScript -->
+    </div>
+  </div>
+
+  <script>
+    const units = {
+      length: {
+        'meter': { toBase: v => v, fromBase: v => v },
+        'kilometer': { toBase: v => v * 1000, fromBase: v => v / 1000 },
+        'centimeter': { toBase: v => v / 100, fromBase: v => v * 100 },
+        'milimeter': { toBase: v => v / 1000, fromBase: v => v * 1000 },
+        'mil': { toBase: v => v * 1609.34, fromBase: v => v / 1609.34 },
+        'yard': { toBase: v => v * 0.9144, fromBase: v => v / 0.9144 },
+        'kaki': { toBase: v => v * 0.3048, fromBase: v => v / 0.3048 },
+        'inci': { toBase: v => v * 0.0254, fromBase: v => v / 0.0254 }
+      },
+      weight: {
+        'kilogram': { toBase: v => v, fromBase: v => v },
+        'gram': { toBase: v => v / 1000, fromBase: v => v * 1000 },
+        'miligram': { toBase: v => v / 1000000, fromBase: v => v * 1000000 },
+        'ton (metrik)': { toBase: v => v * 1000, fromBase: v => v / 1000 },
+        'pound': { toBase: v => v * 0.453592, fromBase: v => v / 0.453592 },
+        'ons': { toBase: v => v * 0.0283495, fromBase: v => v / 0.0283495 }
+      },
+      temperature: {
+        'celsius': {
+          toBase: v => v, // Base is Celsius
+          fromBase: v => v
+        },
+        'fahrenheit': {
+          toBase: v => (v - 32) * 5 / 9,
+          fromBase: v => (v * 9 / 5) + 32
+        },
+        'kelvin': {
+          toBase: v => v - 273.15,
+          fromBase: v => v + 273.15
+        }
+      },
+      volume: {
+        'liter': { toBase: v => v, fromBase: v => v },
+        'mililiter': { toBase: v => v / 1000, fromBase: v => v * 1000 },
+        'galon (AS)': { toBase: v => v * 3.78541, fromBase: v => v / 3.78541 },
+        'cangkir (AS)': { toBase: v => v * 0.236588, fromBase: v => v / 0.236588 },
+        'inci kubik': { toBase: v => v * 0.0163871, fromBase: v => v / 0.0163871 }
+      }
+    };
+
+    // DOM elements
+    const categorySelect = document.getElementById('category');
+    const amountInput = document.getElementById('amount');
+    const fromUnitSelect = document.getElementById('fromUnit');
+    const toUnitSelect = document.getElementById('toUnit');
+    const resultsDiv = document.getElementById('results');
+
+    // Initial state
+    let currentCategory = categorySelect.value;
+    let amount = parseFloat(amountInput.value);
+    let fromUnit = '';
+    let toUnit = '';
+    let convertedValue = null;
+    let error = null;
+
+    // Function to populate unit dropdowns based on selected category
+    function populateUnits() {
+      fromUnitSelect.innerHTML = '';
+      toUnitSelect.innerHTML = '';
+      const selectedUnits = units[currentCategory];
+
+      for (const unitName in selectedUnits) {
+        const optionFrom = document.createElement('option');
+        optionFrom.value = unitName;
+        optionFrom.textContent = unitName.charAt(0).toUpperCase() + unitName.slice(1); // Capitalize first letter
+        fromUnitSelect.appendChild(optionFrom);
+
+        const optionTo = document.createElement('option');
+        optionTo.value = unitName;
+        optionTo.textContent = unitName.charAt(0).toUpperCase() + unitName.slice(1);
+        toUnitSelect.appendChild(optionTo);
+      }
+
+      // Set initial selections or default to first options
+      fromUnit = Object.keys(selectedUnits)[0];
+      toUnit = Object.keys(selectedUnits)[1] || Object.keys(selectedUnits)[0]; // Default to second or first
+      fromUnitSelect.value = fromUnit;
+      toUnitSelect.value = toUnit;
+    }
+
+    // Function to perform the conversion
+    function performConversion() {
+      error = null;
+      convertedValue = null;
+
+      if (isNaN(amount) || amount < 0) {
+        error = 'Harap masukkan jumlah yang valid (angka positif).';
+        render();
+        return;
+      }
+
+      const selectedUnits = units[currentCategory];
+      const fromUnitData = selectedUnits[fromUnit];
+      const toUnitData = selectedUnits[toUnit];
+
+      if (!fromUnitData || !toUnitData) {
+        error = 'Satuan yang dipilih tidak valid.';
+        render();
+        return;
+      }
+
+      try {
+        // Convert from source unit to base unit
+        const baseValue = fromUnitData.toBase(amount);
+        // Convert from base unit to target unit
+        convertedValue = toUnitData.fromBase(baseValue);
+
+        // For temperature, special handling for display
+        if (currentCategory === 'temperature') {
+          convertedValue = convertedValue.toFixed(2); // Keep two decimal places for temperature
+        } else {
+          convertedValue = parseFloat(convertedValue.toFixed(4)); // Four decimal places for others, then remove trailing zeros
+        }
+      } catch (e) {
+        console.error("Error during conversion:", e);
+        error = 'Terjadi kesalahan saat mengonversi satuan.';
+      }
+
+      render();
+    }
+
+    // Function to render UI based on current state
+    function render() {
+      resultsDiv.innerHTML = ''; // Clear previous content
+
+      if (error) {
+        resultsDiv.innerHTML = `
+          <div class="p-5 bg-red-100 text-red-700 rounded-xl shadow-md border-l-4 border-red-500 flex flex-col items-start text-left">
+            <p class="font-bold text-lg mb-2">Kesalahan:</p>
+            <p class="text-base">${error}</p>
+          </div>
+        `;
+      } else if (convertedValue !== null) {
+        resultsDiv.innerHTML = `
+          <div class="p-5 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-xl shadow-lg border-l-4 border-white transform hover:scale-102 transition-transform duration-300 ease-in-out">
+            <p class="text-xl font-medium opacity-90">
+              ${amount} ${fromUnit.charAt(0).toUpperCase() + fromUnit.slice(1)} =
+            </p>
+            <p class="text-4xl font-extrabold mt-2 tracking-wide">
+              ${convertedValue} ${toUnit.charAt(0).toUpperCase() + toUnit.slice(1)}
+            </p>
+          </div>
+        `;
+      }
+    }
+
+    // Event Listeners
+    categorySelect.addEventListener('change', (e) => {
+      currentCategory = e.target.value;
+      populateUnits();
+      performConversion();
+    });
+
+    amountInput.addEventListener('input', (e) => {
+      amount = parseFloat(e.target.value);
+      performConversion();
+    });
+
+    fromUnitSelect.addEventListener('change', (e) => {
+      fromUnit = e.target.value;
+      performConversion();
+    });
+
+    toUnitSelect.addEventListener('change', (e) => {
+      toUnit = e.target.value;
+      performConversion();
+    });
+
+    // Initial setup on page load
+    window.onload = function() {
+      populateUnits();
+      performConversion();
+    };
+  </script>
+</body>
+</html>

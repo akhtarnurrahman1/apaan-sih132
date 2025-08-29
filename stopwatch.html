@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Timer dan Stopwatch</title>
+  <!-- Load Tailwind CSS from CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-green-700 via-teal-700 to-emerald-700 flex items-center justify-center p-4">
+  <div class="bg-white bg-opacity-95 p-8 rounded-3xl shadow-xl border border-white border-opacity-30 w-full max-w-md space-y-6 transform hover:scale-105 transition-transform duration-500 ease-in-out backdrop-filter backdrop-blur-lg">
+    <h1 class="text-4xl font-extrabold text-center text-gray-900 tracking-tight">Timer & Stopwatch</h1>
+
+    <!-- Mode Selector -->
+    <div class="flex justify-center mb-6">
+      <button id="mode-stopwatch" class="px-6 py-3 rounded-l-xl font-semibold text-lg transition-all duration-300 ease-in-out bg-teal-500 text-white shadow-md hover:bg-teal-600">
+        Stopwatch
+      </button>
+      <button id="mode-timer" class="px-6 py-3 rounded-r-xl font-semibold text-lg transition-all duration-300 ease-in-out bg-gray-200 text-gray-700 shadow-md hover:bg-gray-300">
+        Timer
+      </button>
+    </div>
+
+    <!-- Stopwatch Section -->
+    <div id="stopwatch-section" class="space-y-6">
+      <div class="text-center bg-gray-800 text-white rounded-xl p-5 shadow-inner">
+        <div id="stopwatch-display" class="text-6xl font-bold tracking-wider">00:00:00.000</div>
+      </div>
+      <div class="flex justify-center space-x-4 mb-4">
+        <button id="stopwatch-lap" class="px-8 py-4 bg-blue-500 text-white rounded-xl font-bold text-xl shadow-lg hover:bg-blue-600 transition-all duration-300 ease-in-out">Lap</button>
+        <button id="stopwatch-start" class="px-8 py-4 bg-green-500 text-white rounded-xl font-bold text-xl shadow-lg hover:bg-green-600 transition-all duration-300 ease-in-out">Mulai</button>
+        <button id="stopwatch-pause" class="px-8 py-4 bg-yellow-500 text-white rounded-xl font-bold text-xl shadow-lg hover:bg-yellow-600 transition-all duration-300 ease-in-out hidden">Jeda</button>
+        <button id="stopwatch-reset" class="px-8 py-4 bg-red-500 text-white rounded-xl font-bold text-xl shadow-lg hover:bg-red-600 transition-all duration-300 ease-in-out">Reset</button>
+      </div>
+      <div id="stopwatch-laps" class="bg-gray-100 rounded-xl p-4 max-h-48 overflow-y-auto shadow-inner border border-gray-200">
+        <h3 class="text-xl font-semibold text-gray-800 mb-3">Lap Times:</h3>
+        <ul id="lap-list" class="list-none p-0 space-y-2">
+          <!-- Lap times will be inserted here -->
+        </ul>
+      </div>
+    </div>
+
+    <!-- Timer Section -->
+    <div id="timer-section" class="space-y-6 hidden">
+      <div class="text-center bg-gray-800 text-white rounded-xl p-5 shadow-inner">
+        <div id="timer-display" class="text-6xl font-bold tracking-wider">00:00:00</div>
+      </div>
+      <div class="grid grid-cols-3 gap-4 mb-4">
+        <input type="number" id="timer-hours" min="0" max="99" value="0" placeholder="Jam" class="text-center px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400 text-xl" />
+        <input type="number" id="timer-minutes" min="0" max="59" value="0" placeholder="Menit" class="text-center px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400 text-xl" />
+        <input type="number" id="timer-seconds" min="0" max="59" value="0" placeholder="Detik" class="text-center px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400 text-xl" />
+      </div>
+      <div class="flex justify-center space-x-4">
+        <button id="timer-start" class="px-8 py-4 bg-green-500 text-white rounded-xl font-bold text-xl shadow-lg hover:bg-green-600 transition-all duration-300 ease-in-out">Mulai</button>
+        <button id="timer-pause" class="px-8 py-4 bg-yellow-500 text-white rounded-xl font-bold text-xl shadow-lg hover:bg-yellow-600 transition-all duration-300 ease-in-out hidden">Jeda</button>
+        <button id="timer-reset" class="px-8 py-4 bg-red-500 text-white rounded-xl font-bold text-xl shadow-lg hover:bg-red-600 transition-all duration-300 ease-in-out">Reset</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // --- Stopwatch Logic ---
+    let stopwatchInterval;
+    let stopwatchRunning = false;
+    let stopwatchStartTime = 0;
+    let stopwatchElapsedTime = 0;
+    let lapTimes = []; // Array to store lap times
+    let lastLapTime = 0; // To calculate individual lap times
+    let lapCounter = 0; // Counter for lap numbers
+
+    const stopwatchDisplay = document.getElementById('stopwatch-display');
+    const stopwatchStartBtn = document.getElementById('stopwatch-start');
+    const stopwatchPauseBtn = document.getElementById('stopwatch-pause');
+    const stopwatchResetBtn = document.getElementById('stopwatch-reset');
+    const stopwatchLapBtn = document.getElementById('stopwatch-lap'); // New lap button
+    const lapList = document.getElementById('lap-list'); // New lap list container
+
+    function formatStopwatchTime(ms) {
+      const hours = Math.floor(ms / (1000 * 60 * 60));
+      const minutes = Math.floor((ms % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((ms % (1000 * 60)) / 1000);
+      const milliseconds = ms % 1000;
+
+      return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}.${String(milliseconds).padStart(3, '0')}`;
+    }
+
+    function startStopwatch() {
+      if (stopwatchRunning) return;
+      stopwatchRunning = true;
+      stopwatchStartTime = Date.now() - stopwatchElapsedTime;
+      stopwatchInterval = setInterval(() => {
+        stopwatchElapsedTime = Date.now() - stopwatchStartTime;
+        stopwatchDisplay.textContent = formatStopwatchTime(stopwatchElapsedTime);
+      }, 10); // Update every 10ms for millisecond precision
+
+      stopwatchStartBtn.classList.add('hidden');
+      stopwatchPauseBtn.classList.remove('hidden');
+      stopwatchLapBtn.disabled = false; // Enable lap button when running
+    }
+
+    function pauseStopwatch() {
+      if (!stopwatchRunning) return;
+      stopwatchRunning = false;
+      clearInterval(stopwatchInterval);
+      stopwatchStartBtn.classList.remove('hidden');
+      stopwatchPauseBtn.classList.add('hidden');
+      stopwatchLapBtn.disabled = true; // Disable lap button when paused
+    }
+
+    function resetStopwatch() {
+      pauseStopwatch();
+      stopwatchElapsedTime = 0;
+      stopwatchDisplay.textContent = formatStopwatchTime(0);
+      stopwatchStartBtn.classList.remove('hidden');
+      stopwatchPauseBtn.classList.add('hidden');
+      stopwatchLapBtn.disabled = true; // Disable lap button initially
+      lapTimes = []; // Clear lap times
+      lastLapTime = 0;
+      lapCounter = 0;
+      lapList.innerHTML = ''; // Clear lap list display
+    }
+
+    function recordLap() {
+      if (!stopwatchRunning) return;
+
+      lapCounter++;
+      const currentLapTime = stopwatchElapsedTime - lastLapTime;
+      lapTimes.push({ total: stopwatchElapsedTime, lap: currentLapTime });
+      lastLapTime = stopwatchElapsedTime;
+
+      const listItem = document.createElement('li');
+      listItem.classList.add('flex', 'justify-between', 'items-center', 'py-2', 'px-3', 'bg-white', 'rounded-lg', 'shadow-sm', 'text-gray-700', 'text-lg', 'font-medium');
+      listItem.innerHTML = `
+        <span>Lap ${lapCounter}:</span>
+        <span>${formatStopwatchTime(currentLapTime)}</span>
+        <span class="text-gray-500 text-sm">(${formatStopwatchTime(stopwatchElapsedTime)})</span>
+      `;
+      lapList.prepend(listItem); // Add new lap to the top of the list
+    }
+
+    stopwatchStartBtn.addEventListener('click', startStopwatch);
+    stopwatchPauseBtn.addEventListener('click', pauseStopwatch);
+    stopwatchResetBtn.addEventListener('click', resetStopwatch);
+    stopwatchLapBtn.addEventListener('click', recordLap); // Event listener for lap button
+
+    // --- Timer Logic ---
+    let timerInterval;
+    let timerRunning = false;
+    let timerTotalSeconds = 0;
+    let timerRemainingSeconds = 0;
+
+    const timerDisplay = document.getElementById('timer-display');
+    const timerHoursInput = document.getElementById('timer-hours');
+    const timerMinutesInput = document.getElementById('timer-minutes');
+    const timerSecondsInput = document.getElementById('timer-seconds');
+    const timerStartBtn = document.getElementById('timer-start');
+    const timerPauseBtn = document.getElementById('timer-pause');
+    const timerResetBtn = document.getElementById('timer-reset');
+
+    function formatTimerTime(totalSeconds) {
+      const hours = Math.floor(totalSeconds / 3600);
+      const minutes = Math.floor((totalSeconds % 3600) / 60);
+      const seconds = totalSeconds % 60;
+      return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+    }
+
+    function updateTimerDisplay() {
+      timerDisplay.textContent = formatTimerTime(timerRemainingSeconds);
+    }
+
+    function setInitialTimer() {
+      const hours = parseInt(timerHoursInput.value) || 0;
+      const minutes = parseInt(timerMinutesInput.value) || 0;
+      const seconds = parseInt(timerSecondsInput.value) || 0;
+      timerTotalSeconds = (hours * 3600) + (minutes * 60) + seconds;
+      timerRemainingSeconds = timerTotalSeconds;
+      updateTimerDisplay();
+      // Enable/disable input fields based on timer state
+      timerHoursInput.disabled = timerRunning;
+      timerMinutesInput.disabled = timerRunning;
+      timerSecondsInput.disabled = timerRunning;
+    }
+
+    function startTimer() {
+      if (timerRunning) return;
+      if (timerRemainingSeconds <= 0) {
+        setInitialTimer(); // Re-set timer if it was at 0
+        if (timerTotalSeconds <= 0) return; // Don't start if initial set is 0
+      }
+
+      timerRunning = true;
+      timerHoursInput.disabled = true;
+      timerMinutesInput.disabled = true;
+      timerSecondsInput.disabled = true;
+
+      timerInterval = setInterval(() => {
+        if (timerRemainingSeconds > 0) {
+          timerRemainingSeconds--;
+          updateTimerDisplay();
+        } else {
+          clearInterval(timerInterval);
+          timerRunning = false;
+          // You might want to add an alert or sound here for timer completion
+          timerDisplay.textContent = "WAKTU HABIS!";
+          timerStartBtn.classList.remove('hidden');
+          timerPauseBtn.classList.add('hidden');
+          timerHoursInput.disabled = false;
+          timerMinutesInput.disabled = false;
+          timerSecondsInput.disabled = false;
+        }
+      }, 1000); // Update every second
+
+      timerStartBtn.classList.add('hidden');
+      timerPauseBtn.classList.remove('hidden');
+    }
+
+    function pauseTimer() {
+      if (!timerRunning) return;
+      timerRunning = false;
+      clearInterval(timerInterval);
+      timerStartBtn.classList.remove('hidden');
+      timerPauseBtn.classList.add('hidden');
+    }
+
+    function resetTimer() {
+      pauseTimer();
+      timerHoursInput.value = '0';
+      timerMinutesInput.value = '0';
+      timerSecondsInput.value = '0';
+      timerTotalSeconds = 0;
+      timerRemainingSeconds = 0;
+      updateTimerDisplay();
+      timerDisplay.textContent = "00:00:00"; // Ensure display resets explicitly
+      timerStartBtn.classList.remove('hidden');
+      timerPauseBtn.classList.add('hidden');
+      timerHoursInput.disabled = false;
+      timerMinutesInput.disabled = false;
+      timerSecondsInput.disabled = false;
+    }
+
+    // Event listeners for timer inputs
+    timerHoursInput.addEventListener('input', setInitialTimer);
+    timerMinutesInput.addEventListener('input', setInitialTimer);
+    timerSecondsInput.addEventListener('input', setInitialTimer);
+
+    timerStartBtn.addEventListener('click', startTimer);
+    timerPauseBtn.addEventListener('click', pauseTimer);
+    timerResetBtn.addEventListener('click', resetTimer);
+
+    // --- Mode Switching Logic ---
+    const modeStopwatchBtn = document.getElementById('mode-stopwatch');
+    const modeTimerBtn = document.getElementById('mode-timer');
+    const stopwatchSection = document.getElementById('stopwatch-section');
+    const timerSection = document.getElementById('timer-section');
+
+    function showStopwatchMode() {
+      stopwatchSection.classList.remove('hidden');
+      timerSection.classList.add('hidden');
+      modeStopwatchBtn.classList.add('bg-teal-500', 'text-white');
+      modeStopwatchBtn.classList.remove('bg-gray-200', 'text-gray-700');
+      modeTimerBtn.classList.remove('bg-teal-500', 'text-white');
+      modeTimerBtn.classList.add('bg-gray-200', 'text-gray-700');
+      resetStopwatch(); // Reset stopwatch state when switching
+      resetTimer(); // Reset timer state when switching
+    }
+
+    function showTimerMode() {
+      stopwatchSection.classList.add('hidden');
+      timerSection.classList.remove('hidden');
+      modeTimerBtn.classList.add('bg-teal-500', 'text-white');
+      modeTimerBtn.classList.remove('bg-gray-200', 'text-gray-700');
+      modeStopwatchBtn.classList.remove('bg-teal-500', 'text-white');
+      modeStopwatchBtn.classList.add('bg-gray-200', 'text-gray-700');
+      resetStopwatch(); // Reset stopwatch state when switching
+      resetTimer(); // Reset timer state when switching
+    }
+
+    modeStopwatchBtn.addEventListener('click', showStopwatchMode);
+    modeTimerBtn.addEventListener('click', showTimerMode);
+
+    // Initial load: show stopwatch by default
+    window.onload = function() {
+      showStopwatchMode();
+      setInitialTimer(); // Set initial timer display value
+    };
+  </script>
+</body>
+</html>
