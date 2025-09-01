@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Penghasil Palet Warna</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 1rem;
+        }
+        .container {
+            max-width: 800px;
+            width: 100%;
+            background-color: #ffffff;
+            border-radius: 1rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            padding: 2rem;
+            text-align: center;
+        }
+        .color-palette {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+        .color-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            border-radius: 0.75rem;
+            overflow: hidden;
+            flex: 1 1 120px;
+            max-width: 150px;
+        }
+        .color-box {
+            width: 100%;
+            height: 120px;
+            cursor: pointer;
+            transition: transform 0.2s ease-in-out;
+            border-radius: 0.75rem 0.75rem 0 0;
+        }
+        .color-box:hover {
+            transform: scale(1.05);
+        }
+        .color-hex {
+            background-color: #e5e7eb;
+            color: #4b5563;
+            font-weight: 600;
+            padding: 0.5rem 0;
+            width: 100%;
+            text-transform: uppercase;
+            font-size: 0.875rem;
+            border-radius: 0 0 0.75rem 0.75rem;
+        }
+        .notification-box {
+            position: fixed;
+            top: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #10b981;
+            color: #ffffff;
+            padding: 0.75rem 1.5rem;
+            border-radius: 9999px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            opacity: 0;
+            transition: opacity 0.3s ease-in-out;
+            font-weight: 500;
+        }
+        .notification-box.show {
+            opacity: 1;
+        }
+        .generate-btn {
+            background-color: #4f46e5;
+            color: #ffffff;
+            padding: 0.75rem 1.5rem;
+            border-radius: 9999px;
+            font-weight: 600;
+            transition: background-color 0.2s ease-in-out, transform 0.2s ease-in-out;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        .generate-btn:hover {
+            background-color: #4338ca;
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
+
+    <div class="container">
+        <h1 class="text-3xl font-bold text-gray-800">Penghasil Palet Warna</h1>
+        <p class="text-gray-500 mt-2">Klik tombol untuk menghasilkan palet acak atau klik warna untuk menyalin kode hex.</p>
+        
+        <button id="generateBtn" class="generate-btn mt-6 focus:outline-none">
+            Hasilkan Palet Baru
+        </button>
+
+        <div id="paletteContainer" class="color-palette">
+            <!-- Color cards will be generated here by JavaScript -->
+        </div>
+    </div>
+
+    <div id="notification" class="notification-box">
+        Warna disalin!
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const generateBtn = document.getElementById('generateBtn');
+            const paletteContainer = document.getElementById('paletteContainer');
+            const notificationBox = document.getElementById('notification');
+            
+            // Variabel untuk menentukan jumlah warna
+            const numberOfColors = 10;
+
+            // Function to generate a random hex color
+            const getRandomHexColor = () => {
+                const letters = '0123456789ABCDEF';
+                let color = '#';
+                for (let i = 0; i < 6; i++) {
+                    color += letters[Math.floor(Math.random() * 16)];
+                }
+                return color;
+            };
+
+            // Function to create a color card element
+            const createColorCard = (hex) => {
+                const card = document.createElement('div');
+                card.className = 'color-card';
+                card.innerHTML = `
+                    <div class="color-box" style="background-color: ${hex};"></div>
+                    <div class="color-hex">${hex}</div>
+                `;
+
+                // Add click event to copy the hex code
+                card.querySelector('.color-box').addEventListener('click', () => {
+                    const hexCode = card.querySelector('.color-hex').textContent;
+                    copyToClipboard(hexCode);
+                    showNotification();
+                });
+
+                return card;
+            };
+
+            // Function to generate and display a new palette
+            const generatePalette = () => {
+                paletteContainer.innerHTML = ''; // Clear previous palette
+                for (let i = 0; i < numberOfColors; i++) {
+                    const hex = getRandomHexColor();
+                    const card = createColorCard(hex);
+                    paletteContainer.appendChild(card);
+                }
+            };
+
+            // Function to copy text to the clipboard
+            const copyToClipboard = (text) => {
+                const textarea = document.createElement('textarea');
+                textarea.value = text;
+                document.body.appendChild(textarea);
+                textarea.select();
+                try {
+                    document.execCommand('copy');
+                } catch (err) {
+                    console.error('Gagal menyalin teks: ', err);
+                }
+                document.body.removeChild(textarea);
+            };
+
+            // Function to show the notification
+            const showNotification = () => {
+                notificationBox.classList.add('show');
+                setTimeout(() => {
+                    notificationBox.classList.remove('show');
+                }, 2000);
+            };
+
+            // Initial palette generation on load
+            generatePalette();
+
+            // Event listener for the generate button
+            generateBtn.addEventListener('click', generatePalette);
+        });
+    </script>
+</body>
+</html>

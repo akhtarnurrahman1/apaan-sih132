@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aplikasi Perekam Suara</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #e5e7eb;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 1rem;
+        }
+        .container {
+            max-width: 500px;
+            width: 100%;
+            background-color: #ffffff;
+            border-radius: 1.5rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            padding: 2.5rem;
+            text-align: center;
+        }
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 9999px;
+            font-weight: 600;
+            transition: background-color 0.2s ease-in-out, transform 0.2s ease-in-out;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+        .btn-primary {
+            background-color: #4f46e5;
+            color: #ffffff;
+        }
+        .btn-primary:hover {
+            background-color: #4338ca;
+            transform: translateY(-2px);
+        }
+        .btn-red {
+            background-color: #ef4444;
+            color: #ffffff;
+        }
+        .btn-red:hover {
+            background-color: #dc2626;
+            transform: translateY(-2px);
+        }
+        .btn-green {
+            background-color: #10b981;
+            color: #ffffff;
+        }
+        .btn-green:hover {
+            background-color: #059669;
+            transform: translateY(-2px);
+        }
+
+        /* Pulsing animation for recording indicator */
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.5;
+            }
+        }
+
+        .recording-indicator {
+            animation: pulse 1.5s infinite;
+        }
+    </style>
+</head>
+<body class="bg-gray-200 flex items-center justify-center min-h-screen p-4">
+
+    <div class="container">
+        <h1 class="text-3xl font-bold text-gray-800">Perekam Suara</h1>
+        <p id="status" class="text-gray-500 mt-2">Siap untuk merekam.</p>
+        
+        <div class="flex flex-col md:flex-row justify-center gap-4 mt-8">
+            <button id="startBtn" class="btn btn-primary">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />
+                </svg>
+                Mulai
+            </button>
+            <button id="stopBtn" class="btn btn-red" disabled>
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8 9a1 1 0 00-1 1v2a1 1 0 102 0v-2a1 1 0 00-1-1zM12 9a1 1 0 00-1 1v2a1 1 0 102 0v-2a1 1 0 00-1-1z" clip-rule="evenodd" />
+                </svg>
+                Berhenti
+            </button>
+            <a id="downloadLink" class="btn btn-green hidden" href="#">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L10 11.586l2.293-2.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd" />
+                </svg>
+                Unduh
+            </a>
+        </div>
+        
+        <div id="recordingIndicator" class="mt-8 mx-auto w-24 h-24 rounded-full bg-red-500 hidden recording-indicator"></div>
+
+        <audio id="audioPlayback" class="mt-8 w-full hidden" controls></audio>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const startBtn = document.getElementById('startBtn');
+            const stopBtn = document.getElementById('stopBtn');
+            const downloadLink = document.getElementById('downloadLink');
+            const statusText = document.getElementById('status');
+            const audioPlayback = document.getElementById('audioPlayback');
+            const recordingIndicator = document.getElementById('recordingIndicator');
+
+            let mediaRecorder;
+            let audioChunks = [];
+
+            // Check if MediaRecorder API is supported
+            if (!navigator.mediaDevices || !window.MediaRecorder) {
+                statusText.textContent = "Maaf, perekam suara tidak didukung di browser Anda.";
+                startBtn.disabled = true;
+                return;
+            }
+
+            // Function to start recording
+            const startRecording = async () => {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    mediaRecorder = new MediaRecorder(stream);
+                    audioChunks = [];
+
+                    mediaRecorder.ondataavailable = (event) => {
+                        audioChunks.push(event.data);
+                    };
+
+                    mediaRecorder.onstop = () => {
+                        const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+                        const audioUrl = URL.createObjectURL(audioBlob);
+
+                        audioPlayback.src = audioUrl;
+                        audioPlayback.classList.remove('hidden');
+                        downloadLink.href = audioUrl;
+                        downloadLink.download = `perekaman-${Date.now()}.wav`;
+                        downloadLink.classList.remove('hidden');
+                        statusText.textContent = "Perekaman selesai.";
+                        recordingIndicator.classList.add('hidden');
+                        
+                        // Stop all tracks in the stream
+                        stream.getTracks().forEach(track => track.stop());
+                    };
+
+                    mediaRecorder.start();
+                    statusText.textContent = "Merekam...";
+                    startBtn.disabled = true;
+                    stopBtn.disabled = false;
+                    downloadLink.classList.add('hidden');
+                    audioPlayback.classList.add('hidden');
+                    recordingIndicator.classList.remove('hidden');
+                } catch (err) {
+                    statusText.textContent = `Error: ${err.message}. Pastikan Anda memberikan izin mikrofon.`;
+                    console.error("Error accessing microphone:", err);
+                }
+            };
+
+            // Function to stop recording
+            const stopRecording = () => {
+                if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                    mediaRecorder.stop();
+                    startBtn.disabled = false;
+                    stopBtn.disabled = true;
+                }
+            };
+
+            // Event listeners
+            startBtn.addEventListener('click', startRecording);
+            stopBtn.addEventListener('click', stopRecording);
+        });
+    </script>
+</body>
+</html>

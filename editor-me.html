@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editor Markdown</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 1rem;
+        }
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            background-color: #ffffff;
+            border-radius: 1.5rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+        @media (min-width: 768px) {
+            .container {
+                flex-direction: row;
+            }
+        }
+        .editor-panel, .preview-panel {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+        .editor-panel {
+            flex: 1;
+        }
+        .preview-panel {
+            flex: 1;
+        }
+        textarea {
+            width: 100%;
+            height: 500px;
+            padding: 1rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.75rem;
+            resize: vertical;
+            outline: none;
+            transition: border-color 0.2s ease-in-out;
+        }
+        textarea:focus {
+            border-color: #4f46e5;
+        }
+        .preview {
+            width: 100%;
+            height: 500px;
+            padding: 1rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.75rem;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 p-4 flex justify-center items-center min-h-screen">
+
+    <div class="container">
+        <div class="editor-panel">
+            <h2 class="text-xl font-bold text-gray-800 mb-2">Tulis Markdown</h2>
+            <textarea id="markdown-input" placeholder="Tulis Markdown di sini..."></textarea>
+        </div>
+        
+        <div class="preview-panel">
+            <h2 class="text-xl font-bold text-gray-800 mb-2">Pratinjau</h2>
+            <div id="markdown-preview" class="preview"></div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const markdownInput = document.getElementById('markdown-input');
+            const markdownPreview = document.getElementById('markdown-preview');
+
+            // Set up marked.js to render GitHub Flavored Markdown
+            marked.setOptions({
+                gfm: true,
+                breaks: true,
+                sanitize: true,
+            });
+
+            // Function to update the preview
+            const updatePreview = () => {
+                const markdownText = markdownInput.value;
+                const html = marked.parse(markdownText);
+                markdownPreview.innerHTML = html;
+            };
+
+            // Event listener for input changes
+            markdownInput.addEventListener('input', updatePreview);
+
+            // Initial update
+            updatePreview();
+
+            // Set some initial content as an example
+            markdownInput.value = `# Selamat Datang di Editor Markdown
+Ini adalah editor Markdown sederhana.
+
+---
+
+### Fitur
+
+* **Teks Tebal:** Gunakan \`**Teks**\` atau \`__Teks__\`.
+* *Teks Miring:* Gunakan \`*Teks*\` atau \`_Teks_\`.
+* [Tautan](https://www.google.com)
+* \`Kode Inline\`
+* Blok Kode:
+    \`\`\`javascript
+    const myCode = "Halo, Dunia!";
+    console.log(myCode);
+    \`\`\`
+
+### Daftar
+1.  Item pertama
+2.  Item kedua
+    * Sub-item
+    * Sub-item
+
+### Tabel
+| Header 1 | Header 2 |
+|----------|----------|
+| Baris 1  | Data 1   |
+| Baris 2  | Data 2   |`;
+            updatePreview();
+        });
+    </script>
+</body>
+</html>
