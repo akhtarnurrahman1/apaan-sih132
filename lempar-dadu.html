@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aplikasi Lempar Dadu</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Luckiest+Guy&display=swap');
+
+        body {
+            font-family: 'Luckiest Guy', cursive;
+            background: #1a202c;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            color: #fff;
+            padding: 1rem;
+        }
+        .dice-container {
+            width: 150px;
+            height: 150px;
+            background-color: #f0fdf4;
+            border-radius: 1.5rem;
+            box-shadow: 0 10px 15px rgba(0, 0, 0, 0.4);
+            display: grid;
+            grid-template-areas:
+                "dot1 dot2 dot3"
+                "dot4 dot5 dot6"
+                "dot7 dot8 dot9";
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            gap: 5px;
+            padding: 1rem;
+            place-items: center;
+        }
+
+        .dice-dot {
+            width: 25px;
+            height: 25px;
+            background-color: #1a202c;
+            border-radius: 50%;
+            visibility: hidden;
+        }
+
+        .dot-visible {
+            visibility: visible;
+        }
+
+        /* Grid areas for positioning dots */
+        .dot-1 { grid-area: dot1; }
+        .dot-2 { grid-area: dot2; }
+        .dot-3 { grid-area: dot3; }
+        .dot-4 { grid-area: dot4; }
+        .dot-5 { grid-area: dot5; }
+        .dot-6 { grid-area: dot6; }
+        .dot-7 { grid-area: dot7; }
+        .dot-8 { grid-area: dot8; }
+        .dot-9 { grid-area: dot9; }
+    </style>
+</head>
+<body class="bg-gray-900 text-white flex items-center justify-center">
+
+    <div class="container text-center max-w-lg mx-auto p-8 bg-gray-800 rounded-3xl shadow-2xl border-4 border-gray-700">
+        <h1 class="text-4xl sm:text-5xl font-extrabold text-yellow-400 mb-8">Lempar Dadu</h1>
+        
+        <div class="flex flex-col items-center justify-center gap-6">
+            <div class="dice-container mb-6">
+                <div class="dice-dot dot-1"></div>
+                <div class="dice-dot dot-2"></div>
+                <div class="dice-dot dot-3"></div>
+                <div class="dice-dot dot-4"></div>
+                <div class="dice-dot dot-5 dot-visible"></div>
+                <div class="dice-dot dot-6"></div>
+                <div class="dice-dot dot-7"></div>
+                <div class="dice-dot dot-8"></div>
+                <div class="dice-dot dot-9"></div>
+            </div>
+
+            <div id="result" class="text-4xl font-bold text-green-400 mb-6 min-h-[40px]">
+                <span id="resultText">Hasil: </span>
+            </div>
+            
+            <button id="rollBtn" class="w-full px-8 py-4 bg-red-600 hover:bg-red-700 text-white text-2xl rounded-full shadow-lg transform transition-transform duration-300 hover:scale-105 active:scale-95">
+                Lempar Dadu!
+            </button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const rollBtn = document.getElementById('rollBtn');
+            const resultText = document.getElementById('resultText');
+            const diceContainer = document.querySelector('.dice-container');
+            const dots = [
+                { id: 1, positions: [5] },
+                { id: 2, positions: [1, 9] },
+                { id: 3, positions: [1, 5, 9] },
+                { id: 4, positions: [1, 3, 7, 9] },
+                { id: 5, positions: [1, 3, 5, 7, 9] },
+                { id: 6, positions: [1, 3, 4, 6, 7, 9] }
+            ];
+            const allDots = diceContainer.querySelectorAll('.dice-dot');
+            let isRolling = false;
+
+            // Function to update the dice visual
+            const updateDiceVisual = (number) => {
+                allDots.forEach(dot => dot.classList.remove('dot-visible'));
+                const dotConfig = dots.find(d => d.id === number);
+                if (dotConfig) {
+                    dotConfig.positions.forEach(pos => {
+                        const dotElement = diceContainer.querySelector(`.dot-${pos}`);
+                        if (dotElement) {
+                            dotElement.classList.add('dot-visible');
+                        }
+                    });
+                }
+            };
+            
+            // Initial dice state
+            updateDiceVisual(1);
+            resultText.textContent = `Hasil: 1`;
+
+            // Function to handle the dice roll
+            const rollDice = () => {
+                if (isRolling) return;
+                isRolling = true;
+                rollBtn.textContent = 'Melempar...';
+                
+                // Simulate a fast roll animation
+                let rollInterval = setInterval(() => {
+                    const tempResult = Math.floor(Math.random() * 6) + 1;
+                    updateDiceVisual(tempResult);
+                }, 100);
+
+                setTimeout(() => {
+                    clearInterval(rollInterval);
+                    const finalResult = Math.floor(Math.random() * 6) + 1;
+                    updateDiceVisual(finalResult);
+                    resultText.textContent = `Hasil: ${finalResult}`;
+                    rollBtn.textContent = 'Lempar Dadu!';
+                    isRolling = false;
+                }, 1500);
+            };
+
+            rollBtn.addEventListener('click', rollDice);
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spin The Wheel Game</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Luckiest+Guy&display=swap');
+
+        body {
+            font-family: 'Luckiest Guy', cursive;
+            background: #1a202c;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            color: #fff;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 600px;
+            text-align: center;
+            background: #2d3748;
+            border-radius: 2rem;
+            padding: 2rem;
+            box-shadow: 0 10px 15px rgba(0, 0, 0, 0.5);
+            border: 4px solid #4a5568;
+        }
+
+        .wheel-container {
+            position: relative;
+            width: 300px;
+            height: 300px;
+            margin: 0 auto 2rem;
+        }
+
+        #wheel {
+            width: 100%;
+            height: 100%;
+            transition: transform 7s cubic-bezier(0.2, 0.9, 0.3, 1.1); /* Transisi lebih lama untuk putaran lebih cepat */
+        }
+
+        .pointer {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 40px;
+            height: 40px;
+            background-color: #e53e3e;
+            transform: translate(-50%, -50%) rotate(45deg);
+            border: 4px solid #fff;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.7);
+        }
+
+        .pointer::before {
+            content: '';
+            position: absolute;
+            top: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-left: 20px solid transparent;
+            border-right: 20px solid transparent;
+            border-bottom: 25px solid #e53e3e;
+        }
+    </style>
+</head>
+<body class="bg-gray-800 text-white flex items-center justify-center min-h-screen p-4">
+
+    <div class="container">
+        <h1 class="text-4xl sm:text-5xl font-extrabold mb-8 text-yellow-400">Spin The Wheel</h1>
+        
+        <div class="wheel-container">
+            <svg id="wheel" viewBox="0 0 100 100" class="rotate-0">
+            </svg>
+            <div class="pointer"></div>
+        </div>
+        
+        <div id="result" class="text-2xl font-bold my-6 h-12 flex items-center justify-center"></div>
+
+        <button id="spinBtn" class="w-full sm:w-auto px-10 py-4 bg-red-600 hover:bg-red-700 text-white text-2xl rounded-full shadow-lg transform transition-transform duration-300 hover:scale-105 active:scale-95">
+            PUTAR!
+        </button>
+
+        <div class="mt-8">
+            <h2 class="text-xl font-bold mb-4">Tambahkan Pilihan</h2>
+            <div class="flex flex-col sm:flex-row gap-4 mb-4">
+                <input type="text" id="optionInput" placeholder="Nama Pilihan" class="flex-grow p-3 rounded-xl text-black border border-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500">
+                <input type="number" id="weightInput" placeholder="Bobot (misal: 10)" value="1" min="1" class="w-full sm:w-28 p-3 rounded-xl text-black border border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <button id="addBtn" class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-md transition-colors duration-200">
+                    Tambah
+                </button>
+            </div>
+            <ul id="optionList" class="bg-gray-700 p-4 rounded-xl max-h-48 overflow-y-auto border border-gray-600">
+                <!-- Pilihan akan ditambahkan di sini -->
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const wheelSVG = document.getElementById('wheel');
+            const spinBtn = document.getElementById('spinBtn');
+            const resultDiv = document.getElementById('result');
+            const optionInput = document.getElementById('optionInput');
+            const weightInput = document.getElementById('weightInput');
+            const addBtn = document.getElementById('addBtn');
+            const optionList = document.getElementById('optionList');
+            
+            // Menggunakan array of objects untuk menyimpan nama dan bobot
+            let options = [
+                { name: 'Menang!', weight: 10 },
+                { name: 'Kalah', weight: 5 },
+                { name: 'Coba Lagi', weight: 8 },
+                { name: 'Hadiah Kecil', weight: 15 },
+                { name: 'Hadiah Besar', weight: 2 }
+            ];
+            const colors = ['#f59e0b', '#ef4444', '#10b981', '#3b82f6', '#8b5cf6', '#d946ef', '#ec4899', '#f97316'];
+
+            let spinning = false;
+
+            const drawWheel = () => {
+                wheelSVG.innerHTML = ''; // Hapus roda sebelumnya
+                const totalOptions = options.length;
+                let totalWeight = options.reduce((sum, option) => sum + option.weight, 0);
+                
+                let startAngle = 0;
+                options.forEach((option, index) => {
+                    const anglePerSlice = (option.weight / totalWeight) * 360;
+                    const angleEnd = startAngle + anglePerSlice;
+                    const color = colors[index % colors.length];
+
+                    // Menggunakan perhitungan SVG untuk membuat irisan (slice)
+                    const outerRadius = 50;
+                    const startX = 50 + outerRadius * Math.cos(startAngle * Math.PI / 180);
+                    const startY = 50 + outerRadius * Math.sin(startAngle * Math.PI / 180);
+                    const endX = 50 + outerRadius * Math.cos(angleEnd * Math.PI / 180);
+                    const endY = 50 + outerRadius * Math.sin(angleEnd * Math.PI / 180);
+                    
+                    const largeArcFlag = anglePerSlice > 180 ? 1 : 0;
+                    
+                    const slice = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                    slice.setAttribute('d', `M 50,50 L ${startX},${startY} A ${outerRadius},${outerRadius} 0 ${largeArcFlag},1 ${endX},${endY} Z`);
+                    slice.setAttribute('fill', color);
+                    slice.style.stroke = 'white';
+                    slice.style.strokeWidth = '0.5';
+                    wheelSVG.appendChild(slice);
+
+                    // Tambahkan teks untuk setiap irisan
+                    const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                    const textAngle = startAngle + anglePerSlice / 2;
+                    const textX = 50 + (outerRadius * 0.7) * Math.cos((textAngle) * Math.PI / 180);
+                    const textY = 50 + (outerRadius * 0.7) * Math.sin((textAngle) * Math.PI / 180);
+                    text.setAttribute('x', textX);
+                    text.setAttribute('y', textY);
+                    text.setAttribute('fill', 'white');
+                    text.setAttribute('font-size', '5');
+                    text.setAttribute('font-family', 'Luckiest Guy');
+                    text.setAttribute('text-anchor', 'middle');
+                    text.setAttribute('dominant-baseline', 'middle');
+                    text.setAttribute('transform', `rotate(${textAngle}, ${textX}, ${textY})`);
+                    text.textContent = option.name;
+                    wheelSVG.appendChild(text);
+
+                    startAngle = angleEnd;
+                });
+            };
+
+            const spinWheel = () => {
+                if (spinning || options.length === 0) return;
+                spinning = true;
+                
+                // Algoritma pemilihan berbasis bobot
+                let totalWeight = options.reduce((sum, option) => sum + option.weight, 0);
+                let randomValue = Math.random() * totalWeight;
+                let winningOption = null;
+                let winningIndex = -1;
+                let cumulativeWeight = 0;
+
+                for (let i = 0; i < options.length; i++) {
+                    cumulativeWeight += options[i].weight;
+                    if (randomValue <= cumulativeWeight) {
+                        winningOption = options[i].name;
+                        winningIndex = i;
+                        break;
+                    }
+                }
+
+                // Hitung derajat putaran berdasarkan bobot
+                let degreesToSpin = 360 * 10; // Putaran dasar yang cepat
+                let anglePerSlice = 0;
+                let cumulativeAngle = 0;
+                
+                // Tentukan sudut akhir yang tepat
+                for (let i = 0; i < winningIndex; i++) {
+                    anglePerSlice = (options[i].weight / totalWeight) * 360;
+                    cumulativeAngle += anglePerSlice;
+                }
+                anglePerSlice = (options[winningIndex].weight / totalWeight) * 360;
+                degreesToSpin += (360 - (cumulativeAngle + anglePerSlice / 2));
+                
+                wheelSVG.style.transition = 'transform 7s cubic-bezier(0.2, 0.9, 0.3, 1.1)';
+                wheelSVG.style.transform = `rotate(${degreesToSpin}deg)`;
+                
+                resultDiv.textContent = 'Memutar...';
+
+                setTimeout(() => {
+                    resultDiv.textContent = `Kamu mendapatkan: ${winningOption}!`;
+                    spinning = false;
+                }, 7000);
+            };
+
+            const updateOptionList = () => {
+                optionList.innerHTML = '';
+                options.forEach((option, index) => {
+                    const li = document.createElement('li');
+                    li.innerHTML = `<span>${option.name} (Bobot: ${option.weight})</span>`;
+                    li.className = 'flex justify-between items-center py-2 px-4 border-b border-gray-600 last:border-b-0';
+                    
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.textContent = 'Hapus';
+                    deleteBtn.className = 'px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded-md text-sm';
+                    deleteBtn.onclick = () => {
+                        options.splice(index, 1);
+                        drawWheel();
+                        updateOptionList();
+                        resultDiv.textContent = '';
+                    };
+                    
+                    li.appendChild(deleteBtn);
+                    optionList.appendChild(li);
+                });
+            };
+
+            spinBtn.addEventListener('click', spinWheel);
+
+            addBtn.addEventListener('click', () => {
+                const newOptionName = optionInput.value.trim();
+                const newOptionWeight = parseInt(weightInput.value.trim(), 10);
+                if (newOptionName && !isNaN(newOptionWeight) && newOptionWeight > 0) {
+                    options.push({ name: newOptionName, weight: newOptionWeight });
+                    optionInput.value = '';
+                    weightInput.value = '1';
+                    drawWheel();
+                    updateOptionList();
+                    resultDiv.textContent = '';
+                }
+            });
+
+            optionInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    addBtn.click();
+                }
+            });
+
+            weightInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    addBtn.click();
+                }
+            });
+
+            // Putaran awal
+            drawWheel();
+            updateOptionList();
+        });
+    </script>
+</body>
+</html>
