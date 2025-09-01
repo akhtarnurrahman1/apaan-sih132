@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Cube Runner</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #111827;
+            font-family: 'Inter', sans-serif;
+        }
+        canvas {
+            display: block;
+        }
+        .ui-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            color: white;
+            pointer-events: none; /* Allows clicks to go through to the canvas if needed */
+        }
+        .ui-content {
+            background-color: rgba(17, 24, 39, 0.8);
+            padding: 2rem 3rem;
+            border-radius: 1rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            pointer-events: auto; /* Re-enable pointer events for UI elements */
+            backdrop-filter: blur(10px);
+        }
+        #score, #highScore {
+            position: fixed;
+            top: 20px;
+            color: white;
+            font-size: 1.5rem;
+            font-weight: 600;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+        #score {
+            left: 20px;
+        }
+        #highScore {
+            right: 20px;
+        }
+    </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Canvas untuk render 3D -->
+    <canvas id="gameCanvas"></canvas>
+
+    <!-- UI Overlay untuk menu dan skor -->
+    <div id="score" class="hidden">Skor: 0</div>
+    <div id="highScore" class="hidden">Skor Tertinggi: 0</div>
+
+    <div id="startMenu" class="ui-overlay">
+        <div class="ui-content">
+            <h1 class="text-4xl font-bold mb-2">3D Cube Runner</h1>
+            <p class="text-lg text-gray-300 mb-6">Gunakan panah (◄ ►) atau sentuh layar kiri/kanan untuk menghindar.</p>
+            <button id="startButton" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg text-xl transition-transform transform hover:scale-105">
+                Mulai
+            </button>
+        </div>
+    </div>
+
+    <div id="gameOverMenu" class="ui-overlay hidden">
+        <div class="ui-content">
+            <h1 class="text-4xl font-bold mb-2">Game Over</h1>
+            <p id="finalScore" class="text-lg text-gray-300 mb-6">Skor Anda: 0</p>
+            <button id="restartButton" class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-8 rounded-lg text-xl transition-transform transform hover:scale-105">
+                Coba Lagi
+            </button>
+        </div>
+    </div>
+
+    <script type="module">
+        // Inisialisasi Three.js
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({
+            canvas: document.getElementById('gameCanvas'),
+            antialias: true
+        });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.shadowMap.enabled = true;
+
+        // Variabel Game
+        let player, floor, obstacles = [], lanes = [-3, 0, 3];
+        let gameSpeed = 0.2;
+        let score = 0;
+        let highScore = localStorage.getItem('cubeRunnerHighScore') || 0;
+        let gameState = 'start'; // 'start', 'playing', 'gameOver'
+
+        // Mengambil elemen UI
+        const startMenu = document.getElementById('startMenu');
+        const gameOverMenu = document.getElementById('gameOverMenu');
+        const startButton = document.getElementById('startButton');
+        const restartButton = document.getElementById('restartButton');
+        const scoreElement = document.getElementById('score');
+        const highScoreElement = document.getElementById('highScore');
+        const finalScoreElement = document.getElementById('finalScore');
+        
+        // Fungsi inisialisasi game
+        function init() {
+            setupScene();
+            createPlayer();
+            createFloor();
+            createObstacles();
+            resetGame();
+        }
+
+        // Setup dasar scene
+        function setupScene() {
+            scene.fog = new THREE.Fog(0x111827, 10, 50);
+            
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+            scene.add(ambientLight);
+
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            directionalLight.position.set(5, 10, 7);
+            directionalLight.castShadow = true;
+            directionalLight.shadow.camera.top = 10;
+            directionalLight.shadow.camera.bottom = -10;
+            directionalLight.shadow.camera.left = -10;
+            directionalLight.shadow.camera.right = 10;
+            scene.add(directionalLight);
+        }
+
+        // Membuat player
+        function createPlayer() {
+            const geometry = new THREE.BoxGeometry(1.5, 1.5, 1.5);
+            const material = new THREE.MeshStandardMaterial({ color: 0x3b82f6 });
+            player = new THREE.Mesh(geometry, material);
+            player.castShadow = true;
+            player.userData = { currentLane: 1, targetLane: 1 };
+            scene.add(player);
+        }
+
+        // Membuat lantai
+        function createFloor() {
+            const geometry = new THREE.PlaneGeometry(20, 200);
+            const material = new THREE.MeshStandardMaterial({ color: 0x374151 });
+            floor = new THREE.Mesh(geometry, material);
+            floor.rotation.x = -Math.PI / 2;
+            floor.position.y = -0.75;
+            floor.receiveShadow = true;
+            scene.add(floor);
+        }
+        
+        // Membuat pool rintangan
+        function createObstacles() {
+            const obstacleGeometry = new THREE.BoxGeometry(2, 2, 2);
+            for(let i=0; i < 15; i++) {
+                const material = new THREE.MeshStandardMaterial({ color: 0xef4444 });
+                const obstacle = new THREE.Mesh(obstacleGeometry, material);
+                obstacle.castShadow = true;
+                obstacle.visible = false;
+                obstacles.push(obstacle);
+                scene.add(obstacle);
+            }
+        }
+        
+        // Menempatkan rintangan secara acak
+        function spawnObstacle(referenceZ) {
+            const inactiveObstacles = obstacles.filter(o => !o.visible);
+            if(inactiveObstacles.length > 0) {
+                const obstacle = inactiveObstacles[0];
+                const lane = Math.floor(Math.random() * 3);
+                obstacle.position.set(lanes[lane], 0.25, referenceZ - 30 - (Math.random() * 30));
+                obstacle.visible = true;
+            }
+        }
+
+        // Kontrol player Keyboard
+        window.addEventListener('keydown', (e) => {
+            if (gameState !== 'playing') return;
+            if ((e.key === 'ArrowLeft' || e.key.toLowerCase() === 'a') && player.userData.targetLane > 0) {
+                player.userData.targetLane--;
+            }
+            if ((e.key === 'ArrowRight' || e.key.toLowerCase() === 'd') && player.userData.targetLane < 2) {
+                player.userData.targetLane++;
+            }
+        });
+
+        // Kontrol player Sentuh (Mobile)
+        window.addEventListener('touchstart', (e) => {
+            if (gameState !== 'playing') return;
+            // Mencegah scroll saat menyentuh
+            e.preventDefault();
+            const touchX = e.touches[0].clientX;
+            // Cek sisi layar yang disentuh
+            if (touchX < window.innerWidth / 2 && player.userData.targetLane > 0) {
+                // Sentuh sisi kiri
+                player.userData.targetLane--;
+            } else if (touchX >= window.innerWidth / 2 && player.userData.targetLane < 2) {
+                // Sentuh sisi kanan
+                player.userData.targetLane++;
+            }
+        }, { passive: false });
+        
+        // Reset game ke state awal
+        function resetGame() {
+            player.position.set(0, 0.75, 0);
+            player.userData.currentLane = 1;
+            player.userData.targetLane = 1;
+
+            camera.position.set(0, 4, 8);
+            camera.lookAt(player.position);
+            
+            obstacles.forEach(o => o.visible = false);
+            for(let i=0; i<5; i++) {
+                spawnObstacle(-i * 20);
+            }
+            
+            score = 0;
+            gameSpeed = 0.2;
+            updateScoreUI();
+        }
+
+        // Memulai permainan
+        function startGame() {
+            gameState = 'playing';
+            resetGame();
+            startMenu.classList.add('hidden');
+            gameOverMenu.classList.add('hidden');
+            scoreElement.classList.remove('hidden');
+            highScoreElement.classList.remove('hidden');
+        }
+        
+        // Fungsi saat game over
+        function gameOver() {
+            gameState = 'gameOver';
+            if(score > highScore) {
+                highScore = score;
+                localStorage.setItem('cubeRunnerHighScore', highScore);
+            }
+            finalScoreElement.textContent = `Skor Anda: ${score}`;
+            updateScoreUI();
+            gameOverMenu.classList.remove('hidden');
+        }
+        
+        // Update UI Skor
+        function updateScoreUI(){
+            scoreElement.textContent = `Skor: ${score}`;
+            highScoreElement.textContent = `Skor Tertinggi: ${highScore}`;
+        }
+
+        // Loop animasi utama
+        function animate() {
+            requestAnimationFrame(animate);
+
+            if (gameState === 'playing') {
+                // Gerakan player maju
+                player.position.z -= gameSpeed;
+
+                // Gerakan player ke samping dengan mulus (lerp)
+                const targetX = lanes[player.userData.targetLane];
+                player.position.x = THREE.MathUtils.lerp(player.position.x, targetX, 0.1);
+
+                // Kamera mengikuti player
+                camera.position.z = player.position.z + 8;
+                
+                // Update skor
+                score = Math.floor(-player.position.z);
+                updateScoreUI();
+                
+                // Tingkatkan kecepatan
+                gameSpeed += 0.0001;
+
+                // Cek tabrakan dan spawn ulang rintangan
+                const playerBox = new THREE.Box3().setFromObject(player);
+                obstacles.forEach(obstacle => {
+                    if (obstacle.visible) {
+                        const obstacleBox = new THREE.Box3().setFromObject(obstacle);
+                        if(playerBox.intersectsBox(obstacleBox)) {
+                            gameOver();
+                        }
+                        // Jika rintangan sudah di belakang kamera, spawn ulang di depan
+                        if(obstacle.position.z > camera.position.z) {
+                            obstacle.visible = false;
+                            spawnObstacle(player.position.z);
+                        }
+                    }
+                });
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        // Menangani resize window
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // Event listener untuk tombol
+        startButton.addEventListener('click', startGame);
+        restartButton.addEventListener('click', startGame);
+
+        // Mulai semuanya
+        init();
+        animate();
+    </script>
+</body>
+</html>
+
