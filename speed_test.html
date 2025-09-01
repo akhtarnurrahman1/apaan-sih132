@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SpeedTest Pro - Test Kecepatan Internet</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        
+        .speedometer-needle {
+            transform-origin: 50% 50%;
+            transition: transform 1s ease-out;
+        }
+        
+        .progress-arc {
+            transition: stroke-dashoffset 1s ease-out;
+        }
+        
+        .glow-effect {
+            filter: drop-shadow(0 0 8px currentColor);
+        }
+        
+        .animate-pulse-slow {
+            animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .bg-gradient-animated {
+            background: linear-gradient(-45deg, #0f172a, #1e3a8a, #3730a3, #1e40af);
+            background-size: 400% 400%;
+            animation: gradientShift 15s ease infinite;
+        }
+        
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+    </style>
+</head>
+<body class="bg-gradient-animated min-h-screen">
+    <!-- Animated background elements -->
+    <div class="absolute inset-0 overflow-hidden">
+        <div class="absolute -top-40 -right-40 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl animate-pulse-slow"></div>
+        <div class="absolute -bottom-40 -left-40 w-80 h-80 bg-indigo-500/10 rounded-full blur-3xl animate-pulse-slow" style="animation-delay: 1s;"></div>
+    </div>
+
+    <!-- Header -->
+    <header class="relative bg-white/5 backdrop-blur-md border-b border-white/10">
+        <div class="max-w-6xl mx-auto px-6 py-6">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="p-3 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl shadow-lg">
+                        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <h1 class="text-3xl font-bold text-white">SpeedTest Pro</h1>
+                        <p class="text-blue-200">Test Kecepatan Internet Anda</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2 text-blue-200">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9v-9m0-9v9"/>
+                    </svg>
+                    <span class="text-sm">Server: Jakarta</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="relative max-w-6xl mx-auto px-6 py-8">
+        <!-- Main Test Panel -->
+        <div class="bg-white/10 backdrop-blur-md rounded-3xl shadow-2xl border border-white/20 overflow-hidden mb-8">
+            <div class="p-8">
+                <!-- Status -->
+                <div class="text-center mb-8">
+                    <h2 id="status-text" class="text-2xl font-bold text-white mb-4">Siap untuk Test</h2>
+                    <div id="progress-container" class="w-full bg-white/20 rounded-full h-3 overflow-hidden hidden">
+                        <div id="progress-bar" class="h-full bg-gradient-to-r from-blue-400 to-indigo-500 transition-all duration-300 ease-out shadow-lg" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <!-- Speedometers -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+                    <!-- Download Speedometer -->
+                    <div class="bg-white/5 rounded-2xl p-6 border border-white/10">
+                        <div class="relative">
+                            <svg width="200" height="120" viewBox="0 0 100 60" class="overflow-visible mx-auto">
+                                <!-- Background arc -->
+                                <path d="M 15 50 A 35 35 0 0 1 85 50" fill="none" stroke="#f3f4f6" stroke-width="8" stroke-linecap="round"/>
+                                
+                                <!-- Progress arc -->
+                                <path id="download-arc" d="M 15 50 A 35 35 0 0 1 85 50" fill="none" stroke="#10b981" stroke-width="8" stroke-linecap="round" stroke-dasharray="110" stroke-dashoffset="110" class="progress-arc"/>
+                                
+                                <!-- Tick marks -->
+                                <g id="download-ticks"></g>
+                                
+                                <!-- Needle -->
+                                <line id="download-needle" x1="50" y1="50" x2="50" y2="20" stroke="#374151" stroke-width="2" stroke-linecap="round" class="speedometer-needle" style="transform: rotate(-90deg)"/>
+                                
+                                <!-- Center dot -->
+                                <circle cx="50" cy="50" r="3" fill="#374151"/>
+                                
+                                <!-- Value labels -->
+                                <text x="15" y="58" text-anchor="middle" class="text-xs fill-gray-500">0</text>
+                                <text x="85" y="58" text-anchor="middle" class="text-xs fill-gray-500">100</text>
+                            </svg>
+                            
+                            <!-- Digital display -->
+                            <div class="text-center mt-2">
+                                <div id="download-value" class="text-2xl font-bold text-gray-800 transition-colors duration-300">0.00</div>
+                                <div id="download-unit" class="text-sm text-gray-600">Mbps</div>
+                                <div class="text-xs text-gray-500 mt-1">Download Speed</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Upload Speedometer -->
+                    <div class="bg-white/5 rounded-2xl p-6 border border-white/10">
+                        <div class="relative">
+                            <svg width="200" height="120" viewBox="0 0 100 60" class="overflow-visible mx-auto">
+                                <!-- Background arc -->
+                                <path d="M 15 50 A 35 35 0 0 1 85 50" fill="none" stroke="#f3f4f6" stroke-width="8" stroke-linecap="round"/>
+                                
+                                <!-- Progress arc -->
+                                <path id="upload-arc" d="M 15 50 A 35 35 0 0 1 85 50" fill="none" stroke="#3b82f6" stroke-width="8" stroke-linecap="round" stroke-dasharray="110" stroke-dashoffset="110" class="progress-arc"/>
+                                
+                                <!-- Tick marks -->
+                                <g id="upload-ticks"></g>
+                                
+                                <!-- Needle -->
+                                <line id="upload-needle" x1="50" y1="50" x2="50" y2="20" stroke="#374151" stroke-width="2" stroke-linecap="round" class="speedometer-needle" style="transform: rotate(-90deg)"/>
+                                
+                                <!-- Center dot -->
+                                <circle cx="50" cy="50" r="3" fill="#374151"/>
+                                
+                                <!-- Value labels -->
+                                <text x="15" y="58" text-anchor="middle" class="text-xs fill-gray-500">0</text>
+                                <text x="85" y="58" text-anchor="middle" class="text-xs fill-gray-500">50</text>
+                            </svg>
+                            
+                            <!-- Digital display -->
+                            <div class="text-center mt-2">
+                                <div id="upload-value" class="text-2xl font-bold text-gray-800 transition-colors duration-300">0.00</div>
+                                <div id="upload-unit" class="text-sm text-gray-600">Mbps</div>
+                                <div class="text-xs text-gray-500 mt-1">Upload Speed</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Ping Meter -->
+                    <div class="bg-white/5 rounded-2xl p-6 border border-white/10">
+                        <div class="relative">
+                            <svg width="200" height="80" viewBox="0 0 100 40" class="overflow-visible mx-auto">
+                                <!-- Background bar -->
+                                <rect x="10" y="18" width="80" height="4" rx="2" fill="#f3f4f6"/>
+                                
+                                <!-- Quality zones -->
+                                <rect x="10" y="18" width="16" height="4" rx="2" fill="#10b981" opacity="0.3"/>
+                                <rect x="26" y="18" width="24" height="4" rx="2" fill="#f59e0b" opacity="0.3"/>
+                                <rect x="50" y="18" width="20" height="4" rx="2" fill="#f97316" opacity="0.3"/>
+                                <rect x="70" y="18" width="20" height="4" rx="2" fill="#ef4444" opacity="0.3"/>
+                                
+                                <!-- Progress indicator -->
+                                <circle id="ping-indicator" cx="10" cy="20" r="6" fill="#10b981" class="transition-all duration-1000 ease-out" style="filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2))"/>
+                                
+                                <!-- Labels -->
+                                <text x="10" y="35" text-anchor="middle" class="text-xs fill-gray-500">0ms</text>
+                                <text x="30" y="35" text-anchor="middle" class="text-xs fill-gray-500">50ms</text>
+                                <text x="50" y="35" text-anchor="middle" class="text-xs fill-gray-500">100ms</text>
+                                <text x="70" y="35" text-anchor="middle" class="text-xs fill-gray-500">150ms</text>
+                                <text x="90" y="35" text-anchor="middle" class="text-xs fill-gray-500">200ms</text>
+                            </svg>
+                            
+                            <!-- Digital display -->
+                            <div class="text-center mt-2">
+                                <div id="ping-value" class="text-2xl font-bold text-gray-800 transition-colors duration-300">0 ms</div>
+                                <div id="ping-quality" class="text-sm font-medium text-green-500">Excellent</div>
+                                <div class="text-xs text-gray-500 mt-1">Ping</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Control Buttons -->
+                <div class="flex gap-4 justify-center">
+                    <button id="start-btn" class="flex items-center gap-3 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white px-10 py-4 rounded-2xl font-bold text-lg transition-all duration-200 transform hover:scale-105 shadow-xl hover:shadow-2xl">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1m4 0h1m-6 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        Mulai Test
+                    </button>
+                    <button id="stop-btn" class="hidden flex items-center gap-3 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white px-10 py-4 rounded-2xl font-bold text-lg transition-all duration-200 transform hover:scale-105 shadow-xl hover:shadow-2xl">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                        </svg>
+                        Stop Test
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Test History -->
+        <div id="history-panel" class="bg-white/10 backdrop-blur-md rounded-3xl shadow-2xl border border-white/20 overflow-hidden hidden">
+            <div class="p-6 border-b border-white/10">
+                <h3 class="text-xl font-bold text-white flex items-center gap-3">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    Riwayat Test
+                </h3>
+            </div>
+            <div class="p-6">
+                <div id="history-list" class="space-y-4"></div>
+            </div>
+        </div>
+
+        <!-- Info Panel -->
+        <div class="mt-8 bg-gradient-to-r from-blue-500/20 to-indigo-500/20 backdrop-blur-md rounded-2xl p-6 border border-white/20">
+            <h4 class="font-bold text-white mb-4 text-lg">Tentang Speed Test</h4>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-sm">
+                <div class="flex items-start gap-3">
+                    <svg class="w-5 h-5 text-orange-400 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    <div>
+                        <strong class="text-orange-300">Ping (Latency):</strong>
+                        <p class="text-blue-100 mt-1">Mengukur waktu respons server dalam milidetik. Semakin rendah semakin baik.</p>
+                    </div>
+                </div>
+                <div class="flex items-start gap-3">
+                    <svg class="w-5 h-5 text-green-400 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                    <div>
+                        <strong class="text-green-300">Download Speed:</strong>
+                        <p class="text-blue-100 mt-1">Kecepatan unduhan data dari internet ke perangkat Anda.</p>
+                    </div>
+                </div>
+                <div class="flex items-start gap-3">
+                    <svg class="w-5 h-5 text-blue-400 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"/>
+                    </svg>
+                    <div>
+                        <strong class="text-blue-300">Upload Speed:</strong>
+                        <p class="text-blue-100 mt-1">Kecepatan unggahan data dari perangkat Anda ke internet.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        class SpeedTest {
+            constructor() {
+                this.isRunning = false;
+                this.abortController = null;
+                this.testHistory = [];
+                this.currentResult = {};
+                this.testProgress = { phase: 'idle', progress: 0 };
+                
+                this.initializeElements();
+                this.setupEventListeners();
+                this.createTickMarks();
+            }
+
+            initializeElements() {
+                this.elements = {
+                    startBtn: document.getElementById('start-btn'),
+                    stopBtn: document.getElementById('stop-btn'),
+                    statusText: document.getElementById('status-text'),
+                    progressContainer: document.getElementById('progress-container'),
+                    progressBar: document.getElementById('progress-bar'),
+                    downloadValue: document.getElementById('download-value'),
+                    downloadUnit: document.getElementById('download-unit'),
+                    downloadArc: document.getElementById('download-arc'),
+                    downloadNeedle: document.getElementById('download-needle'),
+                    uploadValue: document.getElementById('upload-value'),
+                    uploadUnit: document.getElementById('upload-unit'),
+                    uploadArc: document.getElementById('upload-arc'),
+                    uploadNeedle: document.getElementById('upload-needle'),
+                    pingValue: document.getElementById('ping-value'),
+                    pingQuality: document.getElementById('ping-quality'),
+                    pingIndicator: document.getElementById('ping-indicator'),
+                    historyPanel: document.getElementById('history-panel'),
+                    historyList: document.getElementById('history-list')
+                };
+            }
+
+            setupEventListeners() {
+                this.elements.startBtn.addEventListener('click', () => this.runSpeedTest());
+                this.elements.stopBtn.addEventListener('click', () => this.stopTest());
+            }
+
+            createTickMarks() {
+                // Download ticks
+                const downloadTicks = this.elements.downloadArc.parentNode.querySelector('#download-ticks');
+                for (let i = 0; i <= 10; i++) {
+                    const tickAngle = (i / 10) * 180 - 90;
+                    const isMainTick = i % 2 === 0;
+                    const tick = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                    tick.setAttribute('x1', '50');
+                    tick.setAttribute('y1', '15');
+                    tick.setAttribute('x2', '50');
+                    tick.setAttribute('y2', isMainTick ? '25' : '20');
+                    tick.setAttribute('stroke', '#e5e7eb');
+                    tick.setAttribute('stroke-width', isMainTick ? '2' : '1');
+                    tick.setAttribute('transform', `rotate(${tickAngle} 50 50)`);
+                    downloadTicks.appendChild(tick);
+                }
+
+                // Upload ticks
+                const uploadTicks = this.elements.uploadArc.parentNode.querySelector('#upload-ticks');
+                for (let i = 0; i <= 10; i++) {
+                    const tickAngle = (i / 10) * 180 - 90;
+                    const isMainTick = i % 2 === 0;
+                    const tick = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                    tick.setAttribute('x1', '50');
+                    tick.setAttribute('y1', '15');
+                    tick.setAttribute('x2', '50');
+                    tick.setAttribute('y2', isMainTick ? '25' : '20');
+                    tick.setAttribute('stroke', '#e5e7eb');
+                    tick.setAttribute('stroke-width', isMainTick ? '2' : '1');
+                    tick.setAttribute('transform', `rotate(${tickAngle} 50 50)`);
+                    uploadTicks.appendChild(tick);
+                }
+            }
+
+            updateSpeedometer(type, value, maxValue, isActive = false) {
+                const percentage = Math.min((value / maxValue) * 100, 100);
+                const angle = (percentage / 100) * 180 - 90;
+                
+                const arc = this.elements[`${type}Arc`];
+                const needle = this.elements[`${type}Needle`];
+                const valueEl = this.elements[`${type}Value`];
+                const unitEl = this.elements[`${type}Unit`];
+                
+                // Update arc
+                const dashOffset = 110 - (percentage / 100) * 110;
+                arc.style.strokeDashoffset = dashOffset;
+                
+                // Update needle
+                needle.style.transform = `rotate(${angle}deg)`;
+                
+                // Update digital display
+                const formattedValue = this.formatSpeed(value);
+                const unit = this.getSpeedUnit(value);
+                valueEl.textContent = formattedValue;
+                unitEl.textContent = unit;
+                
+                // Apply active styling
+                if (isActive) {
+                    arc.classList.add('glow-effect');
+                    valueEl.style.color = type === 'download' ? '#10b981' : '#3b82f6';
+                } else {
+                    arc.classList.remove('glow-effect');
+                    valueEl.style.color = '#ffffff';
+                }
+            }
+
+            updatePingMeter(value, isActive = false) {
+                const maxPing = 200;
+                const percentage = Math.min((value / maxPing) * 100, 100);
+                const position = 10 + (percentage / 100) * 80;
+                
+                const indicator = this.elements.pingIndicator;
+                const valueEl = this.elements.pingValue;
+                const qualityEl = this.elements.pingQuality;
+                
+                // Update position
+                indicator.setAttribute('cx', position);
+                
+                // Update color based on quality
+                const color = this.getPingColor(value);
+                const quality = this.getPingQuality(value);
+                
+                indicator.setAttribute('fill', color);
+                valueEl.textContent = `${value} ms`;
+                valueEl.style.color = isActive ? color : '#ffffff';
+                qualityEl.textContent = quality;
+                qualityEl.style.color = color;
+                
+                // Apply glow effect
+                if (isActive) {
+                    indicator.style.filter = `drop-shadow(0 0 8px ${color})`;
+                } else {
+                    indicator.style.filter = 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))';
+                }
+            }
+
+            getPingColor(ping) {
+                if (ping <= 20) return '#10b981';
+                if (ping <= 50) return '#f59e0b';
+                if (ping <= 100) return '#f97316';
+                return '#ef4444';
+            }
+
+            getPingQuality(ping) {
+                if (ping <= 20) return 'Excellent';
+                if (ping <= 50) return 'Good';
+                if (ping <= 100) return 'Fair';
+                return 'Poor';
+            }
+
+            formatSpeed(speed) {
+                if (speed === 0) return '0.00';
+                if (speed < 1) return (speed * 1000).toFixed(0);
+                return speed.toFixed(2);
+            }
+
+            getSpeedUnit(speed) {
+                if (speed === 0) return 'Mbps';
+                if (speed < 1) return 'Kbps';
+                return 'Mbps';
+            }
+
+            updateProgress(phase, progress) {
+                this.testProgress = { phase, progress };
+                
+                const statusTexts = {
+                    'idle': 'Siap untuk Test',
+                    'ping': 'Mengukur Ping...',
+                    'download': 'Mengukur Download...',
+                    'upload': 'Mengukur Upload...',
+                    'complete': 'Test Selesai!'
+                };
+                
+                this.elements.statusText.textContent = statusTexts[phase];
+                
+                if (phase !== 'idle' && phase !== 'complete') {
+                    this.elements.progressContainer.classList.remove('hidden');
+                    this.elements.progressBar.style.width = `${progress}%`;
+                } else {
+                    this.elements.progressContainer.classList.add('hidden');
+                }
+            }
+
+            async testPing() {
+                const tests = [];
+                for (let i = 0; i < 5; i++) {
+                    const startTime = performance.now();
+                    try {
+                        await fetch('https://httpbin.org/delay/0', { 
+                            method: 'HEAD',
+                            cache: 'no-cache',
+                            signal: this.abortController?.signal 
+                        });
+                        const endTime = performance.now();
+                        tests.push(endTime - startTime);
+                        
+                        this.updateProgress('ping', ((i + 1) / 5) * 100);
+                        
+                        const avgPing = tests.reduce((a, b) => a + b, 0) / tests.length;
+                        this.currentResult.ping = Math.round(avgPing);
+                        this.updatePingMeter(this.currentResult.ping, true);
+                        
+                        await new Promise(resolve => setTimeout(resolve, 200));
+                    } catch {
+                        break;
+                    }
+                }
+                
+                return tests.length > 0 ? Math.round(tests.reduce((a, b) => a + b, 0) / tests.length) : 0;
+            }
+
+            async testDownload() {
+                const fileSizes = [1000000, 5000000, 10000000];
+                let totalBytes = 0;
+                let totalTime = 0;
+
+                for (let i = 0; i < fileSizes.length; i++) {
+                    const size = fileSizes[i];
+                    const startTime = performance.now();
+                    
+                    try {
+                        const response = await fetch(`https://httpbin.org/bytes/${size}`, {
+                            signal: this.abortController?.signal
+                        });
+                        await response.blob();
+                        
+                        const endTime = performance.now();
+                        const timeInSeconds = (endTime - startTime) / 1000;
+                        totalBytes += size;
+                        totalTime += timeInSeconds;
+                        
+                        this.updateProgress('download', ((i + 1) / fileSizes.length) * 100);
+                        
+                        const currentSpeed = totalTime > 0 ? (totalBytes * 8) / (totalTime * 1000000) : 0;
+                        this.currentResult.download = currentSpeed;
+                        this.updateSpeedometer('download', currentSpeed, 100, true);
+                        
+                    } catch {
+                        break;
+                    }
+                }
+
+                return totalTime > 0 ? (totalBytes * 8) / (totalTime * 1000000) : 0;
+            }
+
+            async testUpload() {
+                const testSizes = [500000, 1000000, 2000000];
+                let totalBytes = 0;
+                let totalTime = 0;
+
+                for (let i = 0; i < testSizes.length; i++) {
+                    const size = testSizes[i];
+                    const data = new Uint8Array(size).fill(65);
+                    const blob = new Blob([data]);
+                    
+                    const startTime = performance.now();
+                    
+                    try {
+                        await fetch('https://httpbin.org/post', {
+                            method: 'POST',
+                            body: blob,
+                            signal: this.abortController?.signal
+                        });
+                        
+                        const endTime = performance.now();
+                        const timeInSeconds = (endTime - startTime) / 1000;
+                        totalBytes += size;
+                        totalTime += timeInSeconds;
+                        
+                        this.updateProgress('upload', ((i + 1) / testSizes.length) * 100);
+                        
+                        const currentSpeed = totalTime > 0 ? (totalBytes * 8) / (totalTime * 1000000) : 0;
+                        this.currentResult.upload = currentSpeed;
+                        this.updateSpeedometer('upload', currentSpeed, 50, true);
+                        
+                    } catch {
+                        break;
+                    }
+                }
+
+                return totalTime > 0 ? (totalBytes * 8) / (totalTime * 1000000) : 0;
+            }
+
+            async runSpeedTest() {
+                this.isRunning = true;
+                this.currentResult = {};
+                this.abortController = new AbortController();
+                
+                // Update UI
+                this.elements.startBtn.classList.add('hidden');
+                this.elements.stopBtn.classList.remove('hidden');
+                
+                // Reset speedometers
+                this.updateSpeedometer('download', 0, 100);
+                this.updateSpeedometer('upload', 0, 50);
+                this.updatePingMeter(0);
+
+                try {
+                    // Ping test
+                    const ping = await this.testPing();
+                    this.updatePingMeter(ping, false);
+                    
+                    // Download test
+                    const download = await this.testDownload();
+                    this.updateSpeedometer('download', download, 100, false);
+                    
+                    // Upload test
+                    const upload = await this.testUpload();
+                    this.updateSpeedometer('upload', upload, 50, false);
+                    
+                    // Complete
+                    this.updateProgress('complete', 100);
+                    
+                    const result = {
+                        download,
+                        upload,
+                        ping,
+                        timestamp: new Date()
+                    };
+                    
+                    this.testHistory.unshift(result);
+                    if (this.testHistory.length > 5) {
+                        this.testHistory = this.testHistory.slice(0, 5);
+                    }
+                    
+                    this.updateHistoryDisplay();
+                    
+                } catch (error) {
+                    console.error('Test interrupted:', error);
+                } finally {
+                    this.isRunning = false;
+                    this.elements.startBtn.classList.remove('hidden');
+                    this.elements.stopBtn.classList.add('hidden');
+                    
+                    setTimeout(() => {
+                        this.updateProgress('idle', 0);
+                    }, 2000);
+                }
+            }
+
+            stopTest() {
+                if (this.abortController) {
+                    this.abortController.abort();
+                }
+                this.isRunning = false;
+                this.updateProgress('idle', 0);
+                this.currentResult = {};
+                
+                this.elements.startBtn.classList.remove('hidden');
+                this.elements.stopBtn.classList.add('hidden');
+                
+                // Reset speedometers
+                this.updateSpeedometer('download', 0, 100);
+                this.updateSpeedometer('upload', 0, 50);
+                this.updatePingMeter(0);
+            }
+
+            updateHistoryDisplay() {
+                if (this.testHistory.length === 0) {
+                    this.elements.historyPanel.classList.add('hidden');
+                    return;
+                }
+                
+                this.elements.historyPanel.classList.remove('hidden');
+                this.elements.historyList.innerHTML = '';
+                
+                this.testHistory.forEach((result, index) => {
+                    const historyItem = document.createElement('div');
+                    historyItem.className = 'flex items-center justify-between p-4 bg-white/5 rounded-xl border border-white/10 hover:bg-white/10 transition-all duration-200';
+                    
+                    historyItem.innerHTML = `
+                        <div class="text-sm text-blue-200">
+                            ${result.timestamp.toLocaleString('id-ID')}
+                        </div>
+                        <div class="flex gap-8 text-sm">
+                            <div class="flex items-center gap-2">
+                                <svg class="w-4 h-4 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                                <span class="font-semibold text-white">${result.ping} ms</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <svg class="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                </svg>
+                                <span class="font-semibold text-white">
+                                    ${this.formatSpeed(result.download)} ${this.getSpeedUnit(result.download)}
+                                </span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <svg class="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"/>
+                                </svg>
+                                <span class="font-semibold text-white">
+                                    ${this.formatSpeed(result.upload)} ${this.getSpeedUnit(result.upload)}
+                                </span>
+                            </div>
+                        </div>
+                    `;
+                    
+                    this.elements.historyList.appendChild(historyItem);
+                });
+            }
+        }
+
+        // Initialize the speed test application
+        document.addEventListener('DOMContentLoaded', () => {
+            new SpeedTest();
+        });
+    </script>
+</body>
+</html>
