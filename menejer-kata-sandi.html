@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manajer Kata Sandi</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+        }
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(243, 244, 246, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 50;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Layar Penguncian Aplikasi -->
+    <div id="passwordLockScreen" class="fixed inset-0 bg-white z-50 flex items-center justify-center p-4">
+        <div class="bg-white p-8 rounded-2xl shadow-xl w-full max-w-sm text-center">
+            <h1 class="text-3xl font-bold text-gray-800 mb-4">Aplikasi Terkunci</h1>
+            <p class="text-gray-600 mb-6">Masukkan kata sandi untuk melanjutkan.</p>
+            <div class="space-y-4">
+                <input type="password" id="appPasswordInput" placeholder="Masukkan Kata Sandi"
+                       class="mt-1 block w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200">
+                <button id="unlockBtn" class="w-full bg-blue-600 text-white font-semibold py-2 rounded-lg hover:bg-blue-700 transition-colors duration-200">
+                    Buka Kunci
+                </button>
+                <p id="lockErrorMsg" class="text-red-500 text-sm hidden">Kata sandi salah. Coba lagi.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Layar Utama Manajer Kata Sandi -->
+    <div id="mainApp" class="flex items-center justify-center min-h-screen p-4 hidden">
+        <div class="bg-white p-8 rounded-2xl shadow-xl w-full max-w-lg">
+            <h1 class="text-3xl font-bold text-center text-gray-800 mb-2">Manajer Kata Sandi</h1>
+            <p class="text-center text-sm text-gray-500 mb-6">Simpan kata sandi Anda dengan aman</p>
+
+            <!-- Bagian Pengaturan -->
+            <div class="space-y-4 mb-8 p-4 bg-gray-100 rounded-lg">
+                <h2 class="text-lg font-bold text-gray-800">Pengaturan Aplikasi</h2>
+                <div>
+                    <label class="flex items-center cursor-pointer">
+                        <span class="mr-3 text-sm font-medium text-gray-700">Aktifkan Kunci Aplikasi</span>
+                        <div class="relative">
+                            <input type="checkbox" id="appLockToggle" class="sr-only">
+                            <div class="block bg-gray-600 w-14 h-8 rounded-full"></div>
+                            <div class="dot absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition transform peer-checked:translate-x-full"></div>
+                        </div>
+                    </label>
+                </div>
+                <div>
+                    <label for="newAppPassword" class="block text-sm font-medium text-gray-700">Tetapkan Kata Sandi Aplikasi</label>
+                    <input type="password" id="newAppPassword" placeholder="Buat kata sandi baru"
+                           class="mt-1 block w-full px-4 py-2 bg-white border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200">
+                </div>
+                <button id="setAppPasswordBtn" class="w-full bg-blue-600 text-white font-semibold py-2 rounded-lg hover:bg-blue-700 transition-colors duration-200">
+                    Simpan Pengaturan
+                </button>
+            </div>
+            
+            <!-- Bagian Tambah Kata Sandi -->
+            <div class="space-y-4">
+                <div>
+                    <label for="website" class="block text-sm font-medium text-gray-700">Situs Web / Layanan</label>
+                    <input type="text" id="website" placeholder="misal: Google, Facebook"
+                           class="mt-1 block w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200">
+                </div>
+                <div>
+                    <label for="password" class="block text-sm font-medium text-gray-700">Kata Sandi</label>
+                    <input type="password" id="password" placeholder="Masukkan kata sandi"
+                           class="mt-1 block w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200">
+                </div>
+                <button id="saveBtn" class="w-full bg-blue-600 text-white font-semibold py-2 rounded-lg hover:bg-blue-700 transition-colors duration-200">
+                    Simpan Kata Sandi
+                </button>
+            </div>
+            
+            <div id="loadingIndicator" class="text-center mt-6 hidden">
+                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
+                <p class="text-gray-500 mt-2">Memuat...</p>
+            </div>
+
+            <div id="passwordList" class="mt-8 space-y-4">
+                <!-- Items kata sandi akan ditampilkan di sini -->
+            </div>
+
+            <div class="mt-8 pt-4 border-t border-gray-200 text-sm text-center text-gray-500">
+                <p>ID Pengguna: <span id="userIdDisplay" class="font-mono text-gray-700 break-all">Memuat...</span></p>
+                <p>Data disimpan secara real-time di Firestore.</p>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, onSnapshot, addDoc, doc, deleteDoc, setDoc, getDoc, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Mengatur tingkat log untuk debug
+        setLogLevel('debug');
+
+        // Menggunakan variabel global yang disediakan oleh lingkungan Canvas
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+
+        // Inisialisasi Firebase
+        let app, db, auth;
+        let userId;
+        let isAuthReady = false;
+
+        const websiteInput = document.getElementById('website');
+        const passwordInput = document.getElementById('password');
+        const saveBtn = document.getElementById('saveBtn');
+        const passwordList = document.getElementById('passwordList');
+        const userIdDisplay = document.getElementById('userIdDisplay');
+        const loadingIndicator = document.getElementById('loadingIndicator');
+
+        const mainApp = document.getElementById('mainApp');
+        const passwordLockScreen = document.getElementById('passwordLockScreen');
+        const appPasswordInput = document.getElementById('appPasswordInput');
+        const unlockBtn = document.getElementById('unlockBtn');
+        const lockErrorMsg = document.getElementById('lockErrorMsg');
+
+        const appLockToggle = document.getElementById('appLockToggle');
+        const newAppPasswordInput = document.getElementById('newAppPassword');
+        const setAppPasswordBtn = document.getElementById('setAppPasswordBtn');
+
+        let storedAppPassword = null;
+        let isAppLockEnabled = false;
+
+        // Fungsi untuk menginisialisasi Firebase dan autentikasi
+        async function initFirebaseAndAuth() {
+            try {
+                app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+                
+                // Menangani autentikasi
+                onAuthStateChanged(auth, async (user) => {
+                    if (user) {
+                        userId = user.uid;
+                        isAuthReady = true;
+                        userIdDisplay.textContent = userId;
+                        // Muat pengaturan kata sandi aplikasi
+                        await loadAppSettings();
+                    } else {
+                        const initialToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+                        if (initialToken) {
+                            await signInWithCustomToken(auth, initialToken);
+                        } else {
+                            await signInAnonymously(auth);
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error("Kesalahan saat menginisialisasi Firebase:", error);
+            }
+        }
+
+        // Fungsi untuk memuat pengaturan kunci aplikasi
+        async function loadAppSettings() {
+            if (!isAuthReady) {
+                console.warn("Autentikasi belum siap, tidak dapat memuat pengaturan.");
+                return;
+            }
+            try {
+                const settingsDocRef = doc(db, `artifacts/${appId}/users/${userId}/settings/app_lock`);
+                const docSnap = await getDoc(settingsDocRef);
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    isAppLockEnabled = data.isAppLockEnabled;
+                    storedAppPassword = data.appPassword;
+                    appLockToggle.checked = isAppLockEnabled;
+                    
+                    if (isAppLockEnabled) {
+                        // Tampilkan layar kunci jika diaktifkan
+                        passwordLockScreen.classList.remove('hidden');
+                        mainApp.classList.add('hidden');
+                    } else {
+                        // Langsung tampilkan aplikasi jika tidak diaktifkan
+                        passwordLockScreen.classList.add('hidden');
+                        mainApp.classList.remove('hidden');
+                        startListeningForPasswords();
+                    }
+                } else {
+                    // Jika tidak ada pengaturan, langsung tampilkan aplikasi
+                    passwordLockScreen.classList.add('hidden');
+                    mainApp.classList.remove('hidden');
+                    startListeningForPasswords();
+                }
+            } catch (error) {
+                console.error("Kesalahan saat memuat pengaturan kunci aplikasi:", error);
+                passwordLockScreen.classList.add('hidden');
+                mainApp.classList.remove('hidden');
+                startListeningForPasswords();
+            }
+        }
+
+        // Fungsi untuk memulai mendengarkan kata sandi dari Firestore
+        function startListeningForPasswords() {
+            if (!isAuthReady) {
+                console.warn("Autentikasi belum siap, tidak dapat mendengarkan data.");
+                return;
+            }
+
+            const passwordsCollectionRef = collection(db, `artifacts/${appId}/users/${userId}/passwords`);
+
+            // Menampilkan indikator loading saat memuat data awal
+            loadingIndicator.classList.remove('hidden');
+
+            onSnapshot(passwordsCollectionRef, (snapshot) => {
+                loadingIndicator.classList.add('hidden');
+                const docs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                renderPasswordList(docs);
+            }, (error) => {
+                console.error("Kesalahan saat mendengarkan dokumen:", error);
+                loadingIndicator.classList.add('hidden');
+            });
+        }
+
+        // Fungsi untuk menyimpan kata sandi baru
+        saveBtn.addEventListener('click', async () => {
+            if (!isAuthReady) {
+                console.error("Autentikasi belum siap.");
+                return;
+            }
+            
+            const website = websiteInput.value.trim();
+            const password = passwordInput.value.trim();
+
+            if (website && password) {
+                try {
+                    const passwordsCollectionRef = collection(db, `artifacts/${appId}/users/${userId}/passwords`);
+                    await addDoc(passwordsCollectionRef, {
+                        website: website,
+                        password: password,
+                        createdAt: new Date()
+                    });
+                    websiteInput.value = '';
+                    passwordInput.value = '';
+                } catch (e) {
+                    console.error("Kesalahan saat menambahkan dokumen:", e);
+                }
+            } else {
+                console.log("Nama situs web dan kata sandi tidak boleh kosong.");
+            }
+        });
+
+        // Fungsi untuk menyimpan pengaturan kunci aplikasi
+        setAppPasswordBtn.addEventListener('click', async () => {
+            if (!isAuthReady) return;
+            
+            const newPassword = newAppPasswordInput.value.trim();
+            const isEnabled = appLockToggle.checked;
+
+            if (isEnabled && !newPassword) {
+                alert("Harap masukkan kata sandi jika kunci aplikasi diaktifkan.");
+                return;
+            }
+
+            try {
+                const settingsDocRef = doc(db, `artifacts/${appId}/users/${userId}/settings/app_lock`);
+                await setDoc(settingsDocRef, {
+                    isAppLockEnabled: isEnabled,
+                    appPassword: newPassword,
+                    updatedAt: new Date()
+                });
+                storedAppPassword = newPassword;
+                isAppLockEnabled = isEnabled;
+                newAppPasswordInput.value = '';
+                alert("Pengaturan kunci aplikasi berhasil disimpan!");
+            } catch (e) {
+                console.error("Kesalahan saat menyimpan pengaturan:", e);
+            }
+        });
+
+        // Fungsi untuk menyalin kata sandi ke clipboard
+        function copyToClipboard(text) {
+            const tempInput = document.createElement('textarea');
+            tempInput.value = text;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempInput);
+        }
+
+        // Fungsi untuk menghapus kata sandi
+        async function deletePassword(docId) {
+            try {
+                if (!isAuthReady) return;
+                const docRef = doc(db, `artifacts/${appId}/users/${userId}/passwords`, docId);
+                await deleteDoc(docRef);
+            } catch (error) {
+                console.error("Kesalahan saat menghapus dokumen:", error);
+            }
+        }
+
+        // Fungsi untuk merender daftar kata sandi
+        function renderPasswordList(passwords) {
+            passwordList.innerHTML = '';
+            if (passwords.length === 0) {
+                passwordList.innerHTML = '<p class="text-center text-gray-500">Tidak ada kata sandi yang tersimpan.</p>';
+            }
+            passwords.forEach(pw => {
+                const item = document.createElement('div');
+                item.classList.add('bg-gray-50', 'p-4', 'rounded-lg', 'flex', 'justify-between', 'items-center', 'shadow-sm');
+                item.innerHTML = `
+                    <div>
+                        <h3 class="font-semibold text-gray-800">${pw.website}</h3>
+                        <p class="text-sm text-gray-600">${pw.password}</p>
+                    </div>
+                    <div class="flex space-x-2">
+                        <button class="copy-btn bg-gray-200 text-gray-700 p-2 rounded-lg hover:bg-gray-300 transition-colors duration-200">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                <path d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" />
+                                <path d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z" />
+                            </svg>
+                        </button>
+                        <button class="delete-btn bg-red-500 text-white p-2 rounded-lg hover:bg-red-600 transition-colors duration-200">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                            </svg>
+                        </button>
+                    </div>
+                `;
+
+                item.querySelector('.copy-btn').addEventListener('click', () => {
+                    copyToClipboard(pw.password);
+                });
+
+                item.querySelector('.delete-btn').addEventListener('click', () => {
+                    deletePassword(pw.id);
+                });
+
+                passwordList.appendChild(item);
+            });
+        }
+        
+        // Listener untuk tombol buka kunci
+        unlockBtn.addEventListener('click', () => {
+            const enteredPassword = appPasswordInput.value.trim();
+            if (enteredPassword === storedAppPassword) {
+                passwordLockScreen.classList.add('hidden');
+                mainApp.classList.remove('hidden');
+                startListeningForPasswords();
+            } else {
+                lockErrorMsg.classList.remove('hidden');
+            }
+        });
+
+        // Inisialisasi aplikasi saat halaman dimuat
+        window.onload = initFirebaseAndAuth;
+    </script>
+</body>
+</html>

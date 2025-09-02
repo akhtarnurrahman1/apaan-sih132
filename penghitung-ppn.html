@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kalkulator PPN</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-4">
+
+    <div class="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md">
+        <h1 class="text-3xl font-bold text-center text-gray-800 mb-6">Kalkulator PPN</h1>
+
+        <div class="space-y-4">
+            <div>
+                <label for="price" class="block text-sm font-medium text-gray-700">Harga Barang</label>
+                <input type="number" id="price" placeholder="Masukkan harga"
+                       class="mt-1 block w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                       oninput="calculateVAT()">
+            </div>
+
+            <div>
+                <label for="vatRate" class="block text-sm font-medium text-gray-700">Persentase PPN (%)</label>
+                <input type="number" id="vatRate" value="11"
+                       class="mt-1 block w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                       oninput="calculateVAT()">
+            </div>
+
+            <div class="space-y-2 pt-4">
+                <div class="flex justify-between items-center bg-gray-100 p-4 rounded-lg">
+                    <span class="font-medium text-gray-700">Jumlah PPN</span>
+                    <span id="vatAmount" class="font-bold text-lg text-blue-600">0</span>
+                </div>
+                <div class="flex justify-between items-center bg-gray-100 p-4 rounded-lg">
+                    <span class="font-medium text-gray-700">Total Harga (Termasuk PPN)</span>
+                    <span id="totalPrice" class="font-bold text-lg text-green-600">0</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function calculateVAT() {
+            const priceInput = document.getElementById('price');
+            const vatRateInput = document.getElementById('vatRate');
+            const vatAmountDisplay = document.getElementById('vatAmount');
+            const totalPriceDisplay = document.getElementById('totalPrice');
+
+            const price = parseFloat(priceInput.value) || 0;
+            const vatRate = parseFloat(vatRateInput.value) || 0;
+
+            const vatAmount = (price * vatRate) / 100;
+            const totalPrice = price + vatAmount;
+
+            vatAmountDisplay.textContent = formatRupiah(vatAmount);
+            totalPriceDisplay.textContent = formatRupiah(totalPrice);
+        }
+
+        function formatRupiah(number) {
+            const formatter = new Intl.NumberFormat('id-ID', {
+                style: 'currency',
+                currency: 'IDR',
+                minimumFractionDigits: 0
+            });
+            return formatter.format(number);
+        }
+
+        // Jalankan perhitungan saat halaman dimuat untuk menampilkan nilai awal
+        window.onload = calculateVAT;
+    </script>
+
+</body>
+</html>
