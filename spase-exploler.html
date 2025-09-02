@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Penjelajah Luar Angkasa 3D - Misi ke Jupiter</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #000;
+            color: white;
+            font-family: 'Courier New', Courier, monospace;
+        }
+        #info {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            padding: 10px;
+            background-color: rgba(0, 0, 0, 0.7);
+            border-radius: 10px;
+            max-width: 300px;
+        }
+        h1, p {
+            margin: 0;
+        }
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            z-index: 200;
+        }
+        .overlay h2 {
+            font-size: 4em;
+            margin-bottom: 20px;
+        }
+        .overlay button {
+            padding: 15px 30px;
+            font-size: 1.5em;
+            cursor: pointer;
+            background-color: #bb0000;
+            border: none;
+            color: white;
+            border-radius: 10px;
+            font-family: 'Courier New', Courier, monospace;
+        }
+        .overlay button:hover {
+            background-color: #ff0000;
+        }
+        #win-screen button {
+            background-color: #0077bb;
+        }
+        #win-screen button:hover {
+            background-color: #00aaff;
+        }
+    </style>
+</head>
+<body>
+    <div id="info">
+        <h1>Misi: Jupiter</h1>
+        <p>Tugas Anda: Capai Jupiter dan hindari asteroid!</p>
+        <p>Gunakan tombol panah untuk bergerak.</p>
+        <p id="distance-info">Jarak ke Jupiter: ...</p>
+    </div>
+
+    <div id="game-over-screen" class="overlay">
+        <h2>GAME OVER</h2>
+        <p>Anda menabrak asteroid!</p>
+        <button onclick="location.reload()">Coba Lagi</button>
+    </div>
+     <div id="win-screen" class="overlay">
+        <h2>MISI BERHASIL!</h2>
+        <p>Anda telah sampai di Jupiter dengan selamat!</p>
+        <button onclick="location.reload()">Main Lagi</button>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+    <script>
+        // Inisialisasi scene, kamera, dan renderer
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 20000); // Jarak pandang kamera diperjauh
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        let isGameOver = false;
+
+        // Pencahayaan
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+        scene.add(ambientLight);
+        const pointLight = new THREE.PointLight(0xffffff, 1);
+        pointLight.position.set(200, 200, 200);
+        scene.add(pointLight);
+
+        // Membuat pesawat luar angkasa
+        const shipGroup = new THREE.Group();
+        const bodyGeometry = new THREE.ConeGeometry(0.5, 2, 8);
+        const bodyMaterial = new THREE.MeshPhongMaterial({ color: 0xcccccc, flatShading: true });
+        const shipBody = new THREE.Mesh(bodyGeometry, bodyMaterial);
+        shipBody.rotation.x = Math.PI / 2;
+        shipGroup.add(shipBody);
+
+        const wingGeometry = new THREE.BoxGeometry(2.5, 0.2, 1);
+        const wingMaterial = new THREE.MeshPhongMaterial({ color: 0xbb0000 });
+        const leftWing = new THREE.Mesh(wingGeometry, wingMaterial);
+        leftWing.position.set(-1.5, 0, -0.2);
+        shipGroup.add(leftWing);
+
+        const rightWing = new THREE.Mesh(wingGeometry, wingMaterial);
+        rightWing.position.set(1.5, 0, -0.2);
+        shipGroup.add(rightWing);
+        scene.add(shipGroup);
+
+        // Membuat partikel bintang
+        const starVertices = [];
+        for (let i = 0; i < 30000; i++) {
+            const x = (Math.random() - 0.5) * 18000;
+            const y = (Math.random() - 0.5) * 18000;
+            const z = (Math.random() - 0.5) * 18000;
+            starVertices.push(x, y, z);
+        }
+        const starsGeometry = new THREE.BufferGeometry();
+        starsGeometry.setAttribute('position', new THREE.Float32BufferAttribute(starVertices, 3));
+        const starsMaterial = new THREE.PointsMaterial({ color: 0xffffff, size: 2.5 });
+        const starField = new THREE.Points(starsGeometry, starsMaterial);
+        scene.add(starField);
+        
+        // Membuat Planet-planet
+        // 1. Bumi (di dekat titik awal)
+        const earthGeometry = new THREE.SphereGeometry(50, 64, 64);
+        const earthMaterial = new THREE.MeshPhongMaterial({ color: 0x2288ff });
+        const earth = new THREE.Mesh(earthGeometry, earthMaterial);
+        earth.position.set(100, -50, -200);
+        scene.add(earth);
+        
+        // 2. Mars
+        const marsGeometry = new THREE.SphereGeometry(40, 64, 64);
+        const marsMaterial = new THREE.MeshPhongMaterial({ color: 0xc1440e });
+        const mars = new THREE.Mesh(marsGeometry, marsMaterial);
+        mars.position.set(-800, 100, -4000);
+        scene.add(mars);
+
+        // 3. Saturnus
+        const saturnGroup = new THREE.Group();
+        const saturnGeometry = new THREE.SphereGeometry(150, 64, 64);
+        const saturnMaterial = new THREE.MeshPhongMaterial({ color: 0xFCDA9D });
+        const saturn = new THREE.Mesh(saturnGeometry, saturnMaterial);
+        const ringGeometry = new THREE.RingGeometry(180, 250, 64);
+        const ringMaterial = new THREE.MeshBasicMaterial({ color: 0x8A8175, side: THREE.DoubleSide });
+        const ring = new THREE.Mesh(ringGeometry, ringMaterial);
+        ring.rotation.x = Math.PI / 2.5;
+        saturnGroup.add(saturn);
+        saturnGroup.add(ring);
+        saturnGroup.position.set(1200, -200, -8000);
+        scene.add(saturnGroup);
+
+        // 4. Jupiter (tujuan akhir, sangat jauh)
+        const jupiterGeometry = new THREE.SphereGeometry(400, 64, 64);
+        const jupiterMaterial = new THREE.MeshPhongMaterial({ color: 0xE8A763 });
+        const jupiter = new THREE.Mesh(jupiterGeometry, jupiterMaterial);
+        jupiter.position.z = -15000;
+        scene.add(jupiter);
+        
+        // Membuat Asteroid
+        const asteroids = [];
+        const asteroidGeometry = new THREE.IcosahedronGeometry(1, 0); 
+        const asteroidMaterial = new THREE.MeshPhongMaterial({ color: 0x8B4513, flatShading: true });
+
+        for (let i = 0; i < 800; i++) {
+            const asteroid = new THREE.Mesh(asteroidGeometry, asteroidMaterial);
+            asteroid.position.set(
+                (Math.random() - 0.5) * 3000,
+                (Math.random() - 0.5) * 3000,
+                (Math.random() * -14800) - 200 // Sebarkan di sepanjang perjalanan
+            );
+            const scale = Math.random() * 30 + 10;
+            asteroid.scale.set(scale, scale, scale);
+            asteroids.push(asteroid);
+            scene.add(asteroid);
+        }
+
+        // Atur posisi awal kamera
+        camera.position.z = 10;
+        camera.position.y = 3;
+
+        // Kontrol pergerakan (kecepatan ditingkatkan)
+        const keyboard = {};
+        let speed = 0.0;
+        const maxSpeed = 5.0; // Kecepatan maks lebih tinggi
+        const acceleration = 0.05; // Akselerasi lebih cepat
+        const deceleration = 0.98;
+        const turnSpeed = 0.03;
+
+        window.addEventListener('keydown', (e) => { keyboard[e.key] = true; });
+        window.addEventListener('keyup', (e) => { keyboard[e.key] = false; });
+
+        function updateShipMovement() {
+            if (keyboard['ArrowUp']) { speed = Math.min(speed + acceleration, maxSpeed); }
+            if (keyboard['ArrowDown']) { speed = Math.max(speed - acceleration, -maxSpeed/2); }
+            if (keyboard['ArrowLeft']) { shipGroup.rotation.y += turnSpeed; }
+            if (keyboard['ArrowRight']) { shipGroup.rotation.y -= turnSpeed; }
+            
+            speed *= deceleration;
+            shipGroup.translateZ(speed);
+        }
+        
+        function checkCollisions() {
+            for (const asteroid of asteroids) {
+                const distance = shipGroup.position.distanceTo(asteroid.position);
+                if (distance < asteroid.scale.x) {
+                    isGameOver = true;
+                    document.getElementById('game-over-screen').style.display = 'flex';
+                }
+            }
+            const distanceToJupiter = shipGroup.position.distanceTo(jupiter.position);
+            document.getElementById('distance-info').innerText = `Jarak ke Jupiter: ${Math.round(distanceToJupiter)}`;
+            if (distanceToJupiter < jupiter.geometry.parameters.radius + 10) {
+                 isGameOver = true;
+                 document.getElementById('win-screen').style.display = 'flex';
+            }
+        }
+
+        // Loop animasi
+        function animate() {
+            if (isGameOver) return;
+            
+            requestAnimationFrame(animate);
+            
+            updateShipMovement();
+            checkCollisions();
+
+            const relativeCameraOffset = new THREE.Vector3(0, 5, -20);
+            const cameraOffset = relativeCameraOffset.applyMatrix4(shipGroup.matrixWorld);
+
+            camera.position.lerp(cameraOffset, 0.1);
+            camera.lookAt(shipGroup.position);
+            
+            // Putar objek untuk efek dinamis
+            starField.rotation.y += 0.00002;
+            earth.rotation.y += 0.001;
+            mars.rotation.y += 0.0008;
+            saturnGroup.rotation.y += 0.0006;
+            jupiter.rotation.y += 0.0005;
+            asteroids.forEach(a => {
+                a.rotation.x += 0.005;
+                a.rotation.y += 0.005;
+            });
+
+            renderer.render(scene, camera);
+        }
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }, false);
+
+        animate();
+    </script>
+</body>
+</html>
+
