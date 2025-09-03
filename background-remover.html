@@ -3,224 +3,649 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Penghapus Latar Belakang Gambar</title>
-    <!-- Tailwind CSS CDN -->
+    <title>AI Background Remover - Hapus Background Gratis</title>
+    <meta name="description" content="Hapus background foto secara otomatis menggunakan AI. Cepat, gratis, dan 100% offline tanpa upload ke server.">
+    
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Hugging Face Transformers -->
+    <script type="module">
+        import { pipeline, env } from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.1.0/dist/transformers.min.js';
+        window.pipeline = pipeline;
+        window.env = env;
+        
+        // Configure transformers
+        env.allowLocalModels = false;
+        env.useBrowserCache = false;
+    </script>
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    
+    <!-- Custom Styles -->
     <style>
+        /* AI-powered Background Removal App Design System */
+        :root {
+            /* Base colors with AI-tech aesthetic */
+            --bg-primary: 220 25% 6%;
+            --fg-primary: 220 15% 95%;
+            --card-bg: 220 20% 8%;
+            --border: 220 20% 15%;
+            
+            /* AI Purple-Blue gradient theme */
+            --primary: 250 100% 65%;
+            --primary-glow: 280 100% 70%;
+            --accent: 270 95% 60%;
+            
+            /* Gradients */
+            --gradient-primary: linear-gradient(135deg, hsl(250 100% 65%), hsl(280 100% 70%));
+            --gradient-bg: linear-gradient(135deg, hsl(220 25% 6%), hsl(220 20% 12%));
+            --gradient-accent: linear-gradient(45deg, hsl(270 95% 60%), hsl(250 100% 65%));
+            --gradient-surface: linear-gradient(135deg, hsl(220 20% 8% / 0.8), hsl(220 20% 12% / 0.6));
+            
+            /* Effects */
+            --glow-primary: 0 0 20px hsl(250 100% 65% / 0.3);
+            --shadow-card: 0 10px 30px hsl(220 25% 6% / 0.5);
+        }
+        
         body {
-            font-family: "Inter", sans-serif;
-            background-color: #f0f2f5;
+            background: var(--gradient-bg);
+            color: hsl(var(--fg-primary));
+            min-height: 100vh;
+            font-family: system-ui, -apple-system, sans-serif;
         }
-        .container {
-            max-width: 800px;
+        
+        .gradient-primary { background: var(--gradient-primary); }
+        .gradient-accent { background: var(--gradient-accent); }
+        .gradient-surface { 
+            background: var(--gradient-surface);
+            backdrop-filter: blur(10px);
         }
-        .image-preview {
-            max-width: 100%;
-            height: auto;
+        
+        .glow-primary { box-shadow: var(--glow-primary); }
+        .shadow-card { box-shadow: var(--shadow-card); }
+        
+        .glass-morphism {
+            background: var(--gradient-surface);
+            backdrop-filter: blur(10px);
+            border: 1px solid hsl(var(--border));
+        }
+        
+        .transition-smooth { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .transition-spring { transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1); }
+        
+        .btn-primary {
+            background: var(--gradient-primary);
+            color: hsl(var(--fg-primary));
+            border: none;
+            padding: 0.75rem 1.5rem;
             border-radius: 0.5rem;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
         }
-        .loading-spinner {
-            border: 4px solid rgba(0, 0, 0, 0.1);
-            border-left-color: #3b82f6;
-            border-radius: 50%;
-            width: 24px;
-            height: 24px;
+        
+        .btn-primary:hover {
+            transform: scale(1.05);
+            box-shadow: var(--glow-primary);
+        }
+        
+        .btn-outline {
+            background: var(--gradient-surface);
+            color: hsl(var(--fg-primary));
+            border: 1px solid hsl(var(--border));
+            padding: 0.5rem 1rem;
+            border-radius: 0.375rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+        
+        .btn-outline:hover {
+            border-color: hsl(var(--accent));
+        }
+        
+        .upload-area {
+            border: 2px dashed hsl(var(--border));
+            background: var(--gradient-surface);
+            backdrop-filter: blur(10px);
+            border-radius: 0.75rem;
+            padding: 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            min-height: 300px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .upload-area:hover {
+            border-color: hsl(var(--accent));
+            transform: scale(1.02);
+        }
+        
+        .upload-area.drag-over {
+            border-color: hsl(var(--primary));
+            box-shadow: var(--glow-primary);
+            transform: scale(1.05);
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 0.5rem;
+            background: hsl(var(--card-bg));
+            border-radius: 0.25rem;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: var(--gradient-primary);
+            border-radius: 0.25rem;
+            transition: width 0.3s ease;
+        }
+        
+        .spinner {
             animation: spin 1s linear infinite;
         }
+        
         @keyframes spin {
+            from { transform: rotate(0deg); }
             to { transform: rotate(360deg); }
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .animate-pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+        
+        .hidden { display: none; }
+        .flex { display: flex; }
+        .grid { display: grid; }
+        .block { display: block; }
+        
+        @media (min-width: 768px) {
+            .md\\:grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
         }
     </style>
 </head>
-<body class="flex items-center justify-center min-h-screen p-4">
-    <div class="container bg-white p-8 rounded-xl shadow-lg text-center">
-        <h1 class="text-3xl font-bold text-gray-800 mb-6">Penghapus Latar Belakang Gambar</h1>
-        <p class="text-gray-600 mb-8">Unggah gambar Anda untuk menghapus latar belakangnya secara otomatis.</p>
+<body>
+    <div id="app">
+        <!-- Hero Section -->
+        <header class="relative overflow-hidden">
+            <div class="absolute inset-0 gradient-accent opacity-10"></div>
+            <div class="relative z-10 max-w-6xl mx-auto px-4 py-16 text-center">
+                <div class="flex justify-center mb-6">
+                    <div class="w-16 h-16 rounded-full gradient-primary flex items-center justify-center glow-primary">
+                        <i data-lucide="sparkles" class="w-8 h-8"></i>
+                    </div>
+                </div>
+                
+                <h1 class="text-4xl md:text-6xl font-bold mb-6" style="background: linear-gradient(to right, hsl(250 100% 65%), hsl(270 95% 60%)); -webkit-background-clip: text; background-clip: text; color: transparent;">
+                    AI Background Remover
+                </h1>
+                
+                <p class="text-xl text-gray-400 mb-8 max-w-2xl mx-auto">
+                    Hapus background dari foto Anda secara otomatis menggunakan AI. 
+                    Cepat, gratis, dan tidak perlu upload ke server!
+                </p>
+                
+                <div class="flex flex-wrap justify-center gap-6 text-sm text-gray-400">
+                    <div class="flex items-center gap-2">
+                        <i data-lucide="zap" class="w-4 h-4" style="color: hsl(250 100% 65%)"></i>
+                        <span>Proses AI Cepat</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <i data-lucide="shield" class="w-4 h-4" style="color: hsl(250 100% 65%)"></i>
+                        <span>100% Offline</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <i data-lucide="sparkles" class="w-4 h-4" style="color: hsl(250 100% 65%)"></i>
+                        <span>Hasil Berkualitas</span>
+                    </div>
+                </div>
+            </div>
+        </header>
 
-        <input type="file" id="imageInput" accept="image/*" class="hidden" onchange="previewImage(event)">
-        <label for="imageInput" class="cursor-pointer inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-full shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition ease-in-out duration-150">
-            Pilih Gambar
-        </label>
+        <!-- Main Content -->
+        <main class="flex-1 max-w-4xl mx-auto px-4 py-8">
+            <!-- Upload Section -->
+            <div id="upload-section">
+                <div class="upload-area" id="upload-area">
+                    <input type="file" id="file-input" accept="image/*" style="display: none;">
+                    
+                    <div class="flex flex-col items-center gap-4">
+                        <div class="w-16 h-16 rounded-full gradient-primary flex items-center justify-center transition-smooth" id="upload-icon">
+                            <i data-lucide="upload" class="w-8 h-8"></i>
+                        </div>
+                        
+                        <div>
+                            <h3 class="text-xl font-semibold mb-2" id="upload-title">
+                                Upload gambar Anda
+                            </h3>
+                            <p class="text-gray-400">
+                                Drag & drop atau klik untuk memilih gambar
+                            </p>
+                            <p class="text-sm text-gray-500 mt-1">
+                                Format: JPG, PNG, WebP (max 10MB)
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-        <div id="imagePreviewContainer" class="mt-8 hidden">
-            <h2 class="text-xl font-semibold text-gray-700 mb-4">Gambar Asli:</h2>
-            <img id="originalImage" class="image-preview mx-auto mb-6" alt="Gambar Asli">
-        </div>
+            <!-- Processing Section -->
+            <div id="processing-section" class="hidden">
+                <div class="max-w-md mx-auto space-y-6 text-center">
+                    <div class="relative mx-auto w-20 h-20 mb-4">
+                        <div class="absolute inset-0 rounded-full gradient-primary spinner opacity-20"></div>
+                        <div class="absolute inset-2 rounded-full glass-morphism flex items-center justify-center">
+                            <div class="relative">
+                                <i data-lucide="cpu" class="w-8 h-8 animate-pulse" style="color: hsl(250 100% 65%)"></i>
+                                <i data-lucide="sparkles" class="absolute -top-1 -right-1 w-4 h-4 animate-pulse" style="color: hsl(270 95% 60%)"></i>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <h3 class="text-lg font-semibold mb-2">AI Sedang Bekerja</h3>
+                    <p class="text-gray-400 text-sm" id="processing-stage">Memuat model AI...</p>
+                    
+                    <div class="space-y-2">
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-400">Progress</span>
+                            <span id="progress-text">0%</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progress-fill" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    
+                    <p class="text-xs text-gray-500">
+                        Proses ini dapat memakan waktu beberapa detik...
+                    </p>
+                </div>
+            </div>
 
-        <button id="removeBackgroundButton" class="mt-8 px-6 py-3 border border-transparent text-base font-medium rounded-full shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 opacity-50 cursor-not-allowed transition ease-in-out duration-150" disabled onclick="removeBackground()">
-            <span id="buttonText">Hapus Latar Belakang</span>
-            <div id="loadingSpinner" class="loading-spinner hidden ml-2"></div>
-        </button>
+            <!-- Results Section -->
+            <div id="results-section" class="hidden space-y-4">
+                <div class="flex items-center justify-between">
+                    <button id="toggle-comparison" class="btn-outline">
+                        <i data-lucide="eye" class="w-4 h-4 mr-2"></i>
+                        <span id="comparison-text">Sembunyikan Perbandingan</span>
+                    </button>
+                    
+                    <button id="download-btn" class="btn-primary">
+                        <i data-lucide="download" class="w-4 h-4 mr-2"></i>
+                        Download Hasil
+                    </button>
+                </div>
 
-        <div id="resultContainer" class="mt-12 hidden">
-            <h2 class="text-xl font-semibold text-gray-700 mb-4">Hasil (Latar Belakang Dihapus):</h2>
-            <img id="processedImage" class="image-preview mx-auto" alt="Gambar Tanpa Latar Belakang">
-        </div>
+                <div class="grid gap-4 rounded-xl overflow-hidden" id="comparison-grid">
+                    <div class="glass-morphism p-4 rounded-xl" id="original-container">
+                        <h3 class="text-sm font-medium text-gray-400 mb-2">Gambar Asli</h3>
+                        <img id="original-image" class="w-full h-auto rounded-lg shadow-card transition-smooth hover:scale-[1.02]" />
+                    </div>
 
-        <div id="errorMessage" class="mt-8 text-red-600 font-medium hidden"></div>
+                    <div class="glass-morphism p-4 rounded-xl">
+                        <h3 class="text-sm font-medium text-gray-400 mb-2">Background Dihapus</h3>
+                        <div class="relative">
+                            <div class="absolute inset-0 rounded-lg" style="background-image: linear-gradient(45deg, #f0f0f0 25%, transparent 25%), linear-gradient(-45deg, #f0f0f0 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #f0f0f0 75%), linear-gradient(-45deg, transparent 75%, #f0f0f0 75%); background-size: 20px 20px; background-position: 0 0, 0 10px, 10px -10px, -10px 0px;"></div>
+                            <img id="processed-image" class="relative w-full h-auto rounded-lg shadow-card transition-smooth hover:scale-[1.02]" />
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flex justify-center">
+                    <button id="reset-btn" class="btn-outline">Upload Gambar Lain</button>
+                </div>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer style="border-top: 1px solid hsl(var(--border)); background: hsl(var(--card-bg) / 0.5); backdrop-filter: blur(10px);">
+            <div class="max-w-6xl mx-auto px-4 py-6 text-center">
+                <p class="text-sm text-gray-400">
+                    Dibuat dengan ❤️ menggunakan AI dan teknologi web modern
+                </p>
+            </div>
+        </footer>
     </div>
 
-    <script type="module">
-        const imageInput = document.getElementById('imageInput');
-        const originalImage = document.getElementById('originalImage');
-        const processedImage = document.getElementById('processedImage');
-        const removeBackgroundButton = document.getElementById('removeBackgroundButton');
-        const imagePreviewContainer = document.getElementById('imagePreviewContainer');
-        const resultContainer = document.getElementById('resultContainer');
-        const errorMessage = document.getElementById('errorMessage');
-        const loadingSpinner = document.getElementById('loadingSpinner');
-        const buttonText = document.getElementById('buttonText');
+    <!-- Toast Notifications -->
+    <div id="toast-container" class="fixed top-4 right-4 space-y-2 z-50"></div>
 
-        let selectedFileBase64 = null;
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
 
-        /**
-         * Mengubah ArrayBuffer menjadi string base64.
-         * @param {ArrayBuffer} buffer - ArrayBuffer yang akan diubah.
-         * @returns {string} String base64.
-         */
-        function arrayBufferToBase64(buffer) {
-            let binary = '';
-            const bytes = new Uint8Array(buffer);
-            const len = bytes.byteLength;
-            for (let i = 0; i < len; i++) {
-                binary += String.fromCharCode(bytes[i]);
-            }
-            return window.btoa(binary);
+        // Global variables
+        let segmenter = null;
+        let originalImageBlob = null;
+        let processedBlob = null;
+        let showComparison = true;
+
+        // DOM elements
+        const uploadSection = document.getElementById('upload-section');
+        const processingSection = document.getElementById('processing-section');
+        const resultsSection = document.getElementById('results-section');
+        const uploadArea = document.getElementById('upload-area');
+        const fileInput = document.getElementById('file-input');
+        const uploadIcon = document.getElementById('upload-icon');
+        const uploadTitle = document.getElementById('upload-title');
+        const progressText = document.getElementById('progress-text');
+        const progressFill = document.getElementById('progress-fill');
+        const processingStage = document.getElementById('processing-stage');
+        const originalImage = document.getElementById('original-image');
+        const processedImage = document.getElementById('processed-image');
+        const downloadBtn = document.getElementById('download-btn');
+        const resetBtn = document.getElementById('reset-btn');
+        const toggleComparisonBtn = document.getElementById('toggle-comparison');
+        const comparisonGrid = document.getElementById('comparison-grid');
+        const originalContainer = document.getElementById('original-container');
+
+        // Toast function
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            toast.className = `glass-morphism px-4 py-2 rounded-lg shadow-card transition-smooth transform translate-x-full opacity-0`;
+            
+            const color = type === 'error' ? 'hsl(0 84% 60%)' : 
+                         type === 'success' ? 'hsl(120 84% 60%)' : 
+                         'hsl(250 100% 65%)';
+            
+            toast.innerHTML = `
+                <div class="flex items-center gap-2">
+                    <div class="w-2 h-2 rounded-full" style="background: ${color}"></div>
+                    <span class="text-sm">${message}</span>
+                </div>
+            `;
+            
+            document.getElementById('toast-container').appendChild(toast);
+            
+            // Animate in
+            setTimeout(() => {
+                toast.style.transform = 'translateX(0)';
+                toast.style.opacity = '1';
+            }, 100);
+            
+            // Remove after 3 seconds
+            setTimeout(() => {
+                toast.style.transform = 'translateX(100%)';
+                toast.style.opacity = '0';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
         }
 
-        /**
-         * Mengubah string base64 menjadi ArrayBuffer.
-         * @param {string} base64 - String base64 yang akan diubah.
-         * @returns {ArrayBuffer} ArrayBuffer.
-         */
-        function base64ToArrayBuffer(base64) {
-            const binaryString = window.atob(base64);
-            const len = binaryString.length;
-            const bytes = new Uint8Array(len);
-            for (let i = 0; i < len; i++) {
-                bytes[i] = binaryString.charCodeAt(i);
-            }
-            return bytes.buffer;
-        }
-
-        /**
-         * Mempratinjau gambar yang dipilih dan mengaktifkan tombol hapus latar belakang.
-         * @param {Event} event - Objek event perubahan input file.
-         */
-        window.previewImage = function(event) {
-            const file = event.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    originalImage.src = e.target.result;
-                    imagePreviewContainer.classList.remove('hidden');
-                    selectedFileBase64 = e.target.result.split(',')[1]; // Simpan hanya bagian base64
-                    removeBackgroundButton.disabled = false;
-                    removeBackgroundButton.classList.remove('opacity-50', 'cursor-not-allowed');
-                    resultContainer.classList.add('hidden'); // Sembunyikan hasil sebelumnya
-                    errorMessage.classList.add('hidden'); // Sembunyikan pesan error
-                };
-                reader.readAsDataURL(file);
+        // Update progress
+        function updateProgress(progress) {
+            const rounded = Math.round(progress);
+            progressText.textContent = `${rounded}%`;
+            progressFill.style.width = `${progress}%`;
+            
+            if (progress < 20) {
+                processingStage.textContent = "Memuat model AI...";
+            } else if (progress < 50) {
+                processingStage.textContent = "Menganalisis gambar...";
+            } else if (progress < 80) {
+                processingStage.textContent = "Menghapus background...";
+            } else if (progress < 95) {
+                processingStage.textContent = "Menyelesaikan...";
             } else {
-                imagePreviewContainer.classList.add('hidden');
-                removeBackgroundButton.disabled = true;
-                removeBackgroundButton.classList.add('opacity-50', 'cursor-not-allowed');
-                selectedFileBase64 = null;
+                processingStage.textContent = "Selesai!";
             }
-        };
+        }
 
-        /**
-         * Menghapus latar belakang dari gambar yang dipilih menggunakan API Gemini.
-         */
-        window.removeBackground = async function() {
-            if (!selectedFileBase64) {
-                errorMessage.textContent = 'Harap pilih gambar terlebih dahulu.';
-                errorMessage.classList.remove('hidden');
-                return;
-            }
+        // Image resizing function
+        function resizeImageIfNeeded(canvas, ctx, image) {
+            const MAX_DIMENSION = 1024;
+            let width = image.naturalWidth;
+            let height = image.naturalHeight;
 
-            removeBackgroundButton.disabled = true;
-            removeBackgroundButton.classList.add('opacity-50', 'cursor-not-allowed');
-            loadingSpinner.classList.remove('hidden');
-            buttonText.textContent = 'Memproses...';
-            errorMessage.classList.add('hidden');
-            resultContainer.classList.add('hidden');
-
-            const systemPrompt = "Hapus latar belakang dari gambar dan berikan kembali gambar dengan latar belakang transparan.";
-            const userQuery = "Hapus latar belakang gambar ini.";
-            const apiKey = ""; // API key akan otomatis disediakan oleh lingkungan Canvas
-
-            let retries = 0;
-            const maxRetries = 3;
-            const initialDelay = 1000; // 1 second
-
-            while (retries < maxRetries) {
-                try {
-                    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image-preview:generateContent?key=${apiKey}`;
-                    const payload = {
-                        contents: [{
-                            role: "user",
-                            parts: [
-                                { text: userQuery },
-                                {
-                                    inlineData: {
-                                        mimeType: "image/png", // Asumsi input adalah PNG, bisa disesuaikan jika diperlukan
-                                        data: selectedFileBase64
-                                    }
-                                }
-                            ]
-                        }],
-                        generationConfig: {
-                            responseModalities: ['IMAGE'] // Minta respons berupa gambar
-                        },
-                        systemInstruction: {
-                            parts: [{ text: systemPrompt }]
-                        },
-                    };
-
-                    const response = await fetch(apiUrl, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload)
-                    });
-
-                    if (!response.ok) {
-                        const errorData = await response.json();
-                        throw new Error(`Error API: ${response.status} - ${errorData.error.message || response.statusText}`);
-                    }
-
-                    const result = await response.json();
-                    const base64Data = result?.candidates?.[0]?.content?.parts?.find(p => p.inlineData)?.inlineData?.data;
-
-                    if (base64Data) {
-                        processedImage.src = `data:image/png;base64,${base64Data}`;
-                        resultContainer.classList.remove('hidden');
-                        break; // Keluar dari loop retry jika berhasil
-                    } else {
-                        throw new Error('Tidak ada data gambar yang dikembalikan dari API.');
-                    }
-                } catch (error) {
-                    console.error('Gagal menghapus latar belakang:', error);
-                    errorMessage.textContent = `Gagal menghapus latar belakang: ${error.message}. Mencoba lagi...`;
-                    errorMessage.classList.remove('hidden');
-                    retries++;
-                    if (retries < maxRetries) {
-                        await new Promise(res => setTimeout(res, initialDelay * Math.pow(2, retries - 1)));
-                    }
+            if (width > MAX_DIMENSION || height > MAX_DIMENSION) {
+                if (width > height) {
+                    height = Math.round((height * MAX_DIMENSION) / width);
+                    width = MAX_DIMENSION;
+                } else {
+                    width = Math.round((width * MAX_DIMENSION) / height);
+                    height = MAX_DIMENSION;
                 }
+
+                canvas.width = width;
+                canvas.height = height;
+                ctx.drawImage(image, 0, 0, width, height);
+                return true;
             }
 
-            if (retries === maxRetries) {
-                errorMessage.textContent = 'Gagal menghapus latar belakang setelah beberapa kali mencoba. Harap coba lagi nanti.';
-                errorMessage.classList.remove('hidden');
-            }
+            canvas.width = width;
+            canvas.height = height;
+            ctx.drawImage(image, 0, 0);
+            return false;
+        }
 
-            removeBackgroundButton.disabled = false;
-            removeBackgroundButton.classList.remove('opacity-50', 'cursor-not-allowed');
-            loadingSpinner.classList.add('hidden');
-            buttonText.textContent = 'Hapus Latar Belakang';
-        };
+        // Background removal function
+        async function removeBackground(imageElement) {
+            try {
+                updateProgress(10);
+                
+                if (!segmenter) {
+                    segmenter = await window.pipeline('image-segmentation', 'Xenova/segformer-b0-finetuned-ade-512-512', {
+                        device: 'webgpu',
+                    });
+                }
+                
+                updateProgress(40);
+                
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                
+                if (!ctx) throw new Error('Could not get canvas context');
+                
+                const wasResized = resizeImageIfNeeded(canvas, ctx, imageElement);
+                console.log(`Image ${wasResized ? 'was' : 'was not'} resized. Final dimensions: ${canvas.width}x${canvas.height}`);
+                
+                updateProgress(50);
+                
+                const imageData = canvas.toDataURL('image/jpeg', 0.8);
+                updateProgress(60);
+                
+                const result = await segmenter(imageData);
+                updateProgress(80);
+                
+                if (!result || !Array.isArray(result) || result.length === 0 || !result[0].mask) {
+                    throw new Error('Invalid segmentation result');
+                }
+                
+                const outputCanvas = document.createElement('canvas');
+                outputCanvas.width = canvas.width;
+                outputCanvas.height = canvas.height;
+                const outputCtx = outputCanvas.getContext('2d');
+                
+                if (!outputCtx) throw new Error('Could not get output canvas context');
+                
+                outputCtx.drawImage(canvas, 0, 0);
+                
+                const outputImageData = outputCtx.getImageData(0, 0, outputCanvas.width, outputCanvas.height);
+                const data = outputImageData.data;
+                
+                for (let i = 0; i < result[0].mask.data.length; i++) {
+                    const alpha = Math.round((1 - result[0].mask.data[i]) * 255);
+                    data[i * 4 + 3] = alpha;
+                }
+                
+                outputCtx.putImageData(outputImageData, 0, 0);
+                updateProgress(95);
+                
+                return new Promise((resolve, reject) => {
+                    outputCanvas.toBlob(
+                        (blob) => {
+                            if (blob) {
+                                updateProgress(100);
+                                resolve(blob);
+                            } else {
+                                reject(new Error('Failed to create blob'));
+                            }
+                        },
+                        'image/png',
+                        1.0
+                    );
+                });
+            } catch (error) {
+                console.error('Error removing background:', error);
+                throw error;
+            }
+        }
+
+        // Load image from blob
+        function loadImage(blob) {
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                img.onload = () => resolve(img);
+                img.onerror = reject;
+                img.src = URL.createObjectURL(blob);
+            });
+        }
+
+        // Process file
+        async function processFile(file) {
+            try {
+                if (file.size > 10 * 1024 * 1024) {
+                    showToast('Ukuran file terlalu besar. Maksimal 10MB.', 'error');
+                    return;
+                }
+
+                if (!file.type.startsWith('image/')) {
+                    showToast('File harus berupa gambar.', 'error');
+                    return;
+                }
+
+                originalImageBlob = file;
+                const imageUrl = URL.createObjectURL(file);
+                originalImage.src = imageUrl;
+
+                showToast('Gambar berhasil diupload!', 'success');
+                
+                uploadSection.classList.add('hidden');
+                processingSection.classList.remove('hidden');
+                
+                updateProgress(0);
+                
+                const imageElement = await loadImage(file);
+                processedBlob = await removeBackground(imageElement);
+                
+                processedImage.src = URL.createObjectURL(processedBlob);
+                
+                processingSection.classList.add('hidden');
+                resultsSection.classList.remove('hidden');
+                
+                updateComparisonView();
+                
+                showToast('Background berhasil dihapus!', 'success');
+            } catch (error) {
+                console.error('Error processing image:', error);
+                showToast('Gagal memproses gambar. Silakan coba lagi.', 'error');
+                resetApp();
+            }
+        }
+
+        // Update comparison view
+        function updateComparisonView() {
+            if (showComparison) {
+                comparisonGrid.classList.add('md:grid-cols-2');
+                originalContainer.classList.remove('hidden');
+                document.getElementById('comparison-text').textContent = 'Sembunyikan Perbandingan';
+                toggleComparisonBtn.innerHTML = '<i data-lucide="eye-off" class="w-4 h-4 mr-2"></i><span id="comparison-text">Sembunyikan Perbandingan</span>';
+            } else {
+                comparisonGrid.classList.remove('md:grid-cols-2');
+                originalContainer.classList.add('hidden');
+                document.getElementById('comparison-text').textContent = 'Tampilkan Perbandingan';
+                toggleComparisonBtn.innerHTML = '<i data-lucide="eye" class="w-4 h-4 mr-2"></i><span id="comparison-text">Tampilkan Perbandingan</span>';
+            }
+            lucide.createIcons();
+        }
+
+        // Reset application
+        function resetApp() {
+            uploadSection.classList.remove('hidden');
+            processingSection.classList.add('hidden');
+            resultsSection.classList.add('hidden');
+            
+            originalImageBlob = null;
+            processedBlob = null;
+            showComparison = true;
+            
+            originalImage.src = '';
+            processedImage.src = '';
+            
+            updateProgress(0);
+        }
+
+        // Event listeners
+        uploadArea.addEventListener('click', () => fileInput.click());
+        
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('drag-over');
+            uploadTitle.textContent = 'Drop gambar di sini';
+            uploadIcon.innerHTML = '<i data-lucide="file-image" class="w-8 h-8"></i>';
+            lucide.createIcons();
+        });
+        
+        uploadArea.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('drag-over');
+            uploadTitle.textContent = 'Upload gambar Anda';
+            uploadIcon.innerHTML = '<i data-lucide="upload" class="w-8 h-8"></i>';
+            lucide.createIcons();
+        });
+        
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('drag-over');
+            
+            const files = Array.from(e.dataTransfer.files);
+            const imageFile = files.find(file => file.type.startsWith('image/'));
+            
+            if (imageFile) {
+                processFile(imageFile);
+            }
+        });
+        
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                processFile(file);
+            }
+        });
+        
+        downloadBtn.addEventListener('click', () => {
+            if (processedBlob) {
+                const url = URL.createObjectURL(processedBlob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'removed-background.png';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                showToast('Gambar berhasil didownload!', 'success');
+            }
+        });
+        
+        resetBtn.addEventListener('click', resetApp);
+        
+        toggleComparisonBtn.addEventListener('click', () => {
+            showComparison = !showComparison;
+            updateComparisonView();
+        });
+
+        // Initialize icons
+        lucide.createIcons();
+        
+        console.log('AI Background Remover initialized successfully!');
     </script>
 </body>
 </html>
