@@ -1,0 +1,1077 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+    <title>Game Makan Blob</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap');
+        :root {
+            --bg-color: #1a202c;
+            --surface-color: #2d3748;
+            --text-color: #e2e8f0;
+            --muted-text-color: #a0aec0;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100vw;
+            height: 100vh;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            touch-action: none;
+        }
+        #game-wrapper {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        canvas#gameCanvas {
+            background-color: var(--surface-color);
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+        .ui-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none; /* Allow clicks to pass through to canvas */
+        }
+        .ui-overlay > * {
+            pointer-events: auto; /* Re-enable pointer events for UI elements */
+        }
+        .container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            padding: 0.5rem;
+            box-sizing: border-box;
+        }
+        .game-info {
+            font-size: 1rem;
+            font-weight: bold;
+            color: var(--muted-text-color);
+            text-align: center;
+            background-color: rgba(26, 32, 44, 0.5);
+            padding: 0.5rem;
+            border-radius: 0.5rem;
+        }
+        .instructions {
+            display: none; /* Hide on mobile by default */
+        }
+        .message-box, #mainMenu {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(26, 32, 44, 0.95);
+            color: white;
+            padding: 1.5rem;
+            border-radius: 1rem;
+            text-align: center;
+            font-size: 1.25rem;
+            z-index: 1000;
+            display: none;
+            flex-direction: column;
+            gap: 1rem;
+            width: 90%;
+            max-width: 500px;
+        }
+        .message-box button, #mainMenu button {
+            background-color: #4a5568;
+            border: none;
+            color: white;
+            padding: 12px 24px;
+            font-size: 1rem;
+            cursor: pointer;
+            border-radius: 0.5rem;
+            transition: background-color 0.3s ease;
+        }
+        .message-box button:hover, #mainMenu button:hover {
+            background-color: #2d3748;
+        }
+        #mainMenu h1 {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+            color: var(--muted-text-color);
+        }
+        #minimapCanvas {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 120px;
+            height: 120px;
+            border: 2px solid var(--muted-text-color);
+            background-color: rgba(45, 55, 72, 0.8);
+            border-radius: 0.5rem;
+        }
+        #joystick-container {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            width: 120px;
+            height: 120px;
+            background: rgba(128, 128, 128, 0.3);
+            border-radius: 50%;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+        #joystick-knob {
+            width: 50px;
+            height: 50px;
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 50%;
+            position: absolute;
+        }
+        #boosters-wrapper {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            display: none;
+            flex-direction: row;
+            flex-wrap: wrap-reverse;
+            gap: 10px;
+            align-items: flex-end;
+            justify-content: flex-end;
+            z-index: 100;
+            max-width: 200px;
+        }
+        .booster-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .booster-button {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            border: 2px solid #fff;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            font-size: 0.7rem;
+            transition: background-color 0.3s ease, border-color 0.3s ease;
+        }
+        .booster-timer, .booster-count {
+            color: white;
+            margin-top: 4px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            text-shadow: 1px 1px 2px black;
+        }
+
+        /* Desktop specific styles */
+        @media (min-width: 768px) {
+            .game-info { font-size: 1.25rem; }
+            .instructions { display: block; margin-top: 1rem; }
+            #mainMenu h1 { font-size: 2.5rem; }
+            #minimapCanvas { width: 200px; height: 200px; }
+            #joystick-container { width: 150px; height: 150px; }
+            #joystick-knob { width: 60px; height: 60px; }
+            #boosters-wrapper { max-width: none; }
+            .booster-button { width: 80px; height: 80px; font-size: 0.9rem; }
+            .booster-timer, .booster-count { font-size: 1rem; }
+        }
+
+        /* Button Styles */
+        #boost-button.ready { background-color: rgba(0, 255, 0, 0.5); border-color: #0f0; }
+        #boost-button.active { background-color: rgba(255, 165, 0, 0.7); border-color: #ffA500; }
+        #boost-button.cooldown { background-color: rgba(128, 128, 128, 0.5); border-color: #808080; cursor: not-allowed; }
+        #magnet-button.ready { background-color: rgba(0, 191, 255, 0.5); border-color: #00bfff; }
+        #magnet-button.active { background-color: rgba(65, 105, 225, 0.7); border-color: #4169e1; }
+        #magnet-button.cooldown { background-color: rgba(128, 128, 128, 0.5); border-color: #808080; cursor: not-allowed; }
+        #trap-button.ready { background-color: rgba(220, 20, 60, 0.6); border-color: #dc143c; }
+        #trap-button.disabled { background-color: rgba(128, 128, 128, 0.5); border-color: #808080; cursor: not-allowed; }
+        #shield-button.ready { background-color: rgba(30, 144, 255, 0.6); border-color: #1e90ff; }
+        #shield-button.active { background-color: rgba(0, 0, 255, 0.7); border-color: #0000ff; }
+        #shield-button.cooldown { background-color: rgba(128, 128, 128, 0.5); border-color: #808080; cursor: not-allowed; }
+        #push-button.ready { background-color: rgba(148, 0, 211, 0.6); border-color: #9400d3; }
+        #push-button.active { background-color: rgba(75, 0, 130, 0.7); border-color: #4b0082; }
+        #push-button.cooldown { background-color: rgba(128, 128, 128, 0.5); border-color: #808080; cursor: not-allowed; }
+    </style>
+</head>
+<body>
+    <div id="mainMenu">
+        <h1>Game Makan Blob</h1>
+        <button id="easyBtn">Mudah</button>
+        <button id="mediumBtn">Sedang</button>
+        <button id="hardBtn">Sulit</button>
+    </div>
+
+    <div id="game-wrapper" style="display: none;">
+        <canvas id="gameCanvas"></canvas>
+        <div class="ui-overlay">
+            <div class="container">
+                <div id="gameInfo" class="game-info">
+                    Ukuran: <span id="playerSize"></span> | Makanan: <span id="foodCount"></span> | AI: <span id="aiCount"></span>
+                </div>
+                <div id="instructions" class="instructions">
+                    Gerak: Mouse/Joystick | Boost: Spasi | Magnet: Ctrl | Perangkap: T | Shield: S | Push: D
+                </div>
+            </div>
+            <canvas id="minimapCanvas"></canvas>
+            <div id="joystick-container">
+                <div id="joystick-knob"></div>
+            </div>
+            <div id="boosters-wrapper">
+                <div id="push-container" class="booster-container">
+                    <button id="push-button" class="booster-button ready">PUSH</button>
+                    <div id="push-timer" class="booster-timer"></div>
+                </div>
+                <div id="shield-container" class="booster-container">
+                    <button id="shield-button" class="booster-button ready">SHIELD</button>
+                    <div id="shield-timer" class="booster-timer"></div>
+                </div>
+                <div id="trap-container" class="booster-container">
+                    <button id="trap-button" class="booster-button ready">TRAP</button>
+                    <div id="trap-count" class="booster-count"></div>
+                </div>
+                <div id="magnet-container" class="booster-container">
+                    <button id="magnet-button" class="booster-button ready">MAGNET</button>
+                    <div id="magnet-timer" class="booster-timer"></div>
+                </div>
+                <div id="boost-container" class="booster-container">
+                    <button id="boost-button" class="booster-button ready">BOOST</button>
+                    <div id="boost-timer" class="booster-timer"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="messageBox" class="message-box">
+        <p id="messageText"></p>
+        <button id="restartButton">Kembali ke Menu</button>
+    </div>
+
+    <script>
+        // DOM Elements
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const minimapCanvas = document.getElementById('minimapCanvas');
+        const minimapCtx = minimapCanvas.getContext('2d');
+        const playerSizeDisplay = document.getElementById('playerSize');
+        const foodCountDisplay = document.getElementById('foodCount');
+        const aiCountDisplay = document.getElementById('aiCount');
+        const messageBox = document.getElementById('messageBox');
+        const messageText = document.getElementById('messageText');
+        const restartButton = document.getElementById('restartButton');
+        const mainMenu = document.getElementById('mainMenu');
+        const gameWrapper = document.getElementById('game-wrapper');
+        const easyBtn = document.getElementById('easyBtn');
+        const mediumBtn = document.getElementById('mediumBtn');
+        const hardBtn = document.getElementById('hardBtn');
+        const joystickContainer = document.getElementById('joystick-container');
+        const joystickKnob = document.getElementById('joystick-knob');
+        const boostersWrapper = document.getElementById('boosters-wrapper');
+        const boostButton = document.getElementById('boost-button');
+        const boostTimer = document.getElementById('boost-timer');
+        const magnetButton = document.getElementById('magnet-button');
+        const magnetTimer = document.getElementById('magnet-timer');
+        const trapButton = document.getElementById('trap-button');
+        const trapCountDisplay = document.getElementById('trap-count');
+        const shieldButton = document.getElementById('shield-button');
+        const shieldTimer = document.getElementById('shield-timer');
+        const pushButton = document.getElementById('push-button');
+        const pushTimer = document.getElementById('push-timer');
+
+        // Game Constants
+        const MAP_WIDTH = 5000; // Changed as requested
+        const MAP_HEIGHT = 5000; // Changed as requested
+        const INITIAL_PLAYER_RADIUS = 20;
+        const INITIAL_FOOD_COUNT = 1451; // Changed as requested
+        const FOOD_RADIUS = 5;
+        const INITIAL_AI_RADIUS = 15;
+        const PLAYER_SPEED_FACTOR = 0.15;
+        const AI_SPEED_FACTOR = 0.1;
+        
+        // Boost Constants
+        const BOOST_DURATION = 30000;
+        const BOOST_COOLDOWN = 21000;
+        const BOOST_MULTIPLIER = 2;
+
+        // Magnet Constants
+        const MAGNET_DURATION = 30000;
+        const MAGNET_COOLDOWN = 26000;
+        const MAGNET_RADIUS = 300;
+        const MAGNET_PULL_STRENGTH = 2.5;
+
+        // Trap Constants
+        const INITIAL_TRAP_COUNT = 5;
+        const TRAP_RADIUS = 25;
+
+        // Shield Constants
+        const SHIELD_DURATION = 21000;
+        const SHIELD_COOLDOWN = 18000;
+
+        // Push Constants
+        const PUSH_DURATION = 21000;
+        const PUSH_COOLDOWN = 18000;
+        const PUSH_RADIUS = 400;
+        const PUSH_FORCE = 3.5;
+
+        // Game State
+        let player;
+        let foods = [];
+        let ais = [];
+        let traps = [];
+        let animationFrameId;
+        let initialAiCount = 56;
+        let trapCount = INITIAL_TRAP_COUNT;
+
+        // Input State
+        let joystickActive = false;
+        let joystickDx = 0;
+        let joystickDy = 0;
+        let isTouchDevice = false;
+
+        // Booster States
+        let isBoosting = false, boostEndTime = 0, boostCooldownEndTime = 0;
+        let isMagnetActive = false, magnetEndTime = 0, magnetCooldownEndTime = 0;
+        let isShieldActive = false, shieldEndTime = 0, shieldCooldownEndTime = 0;
+        let isPushActive = false, pushEndTime = 0, pushCooldownEndTime = 0;
+
+        // Utility function to generate a random color
+        function getRandomColor() {
+            const letters = '0123456789ABCDEF';
+            let color = '#';
+            for (let i = 0; i < 6; i++) {
+                color += letters[Math.floor(Math.random() * 16)];
+            }
+            return color;
+        }
+
+        // Utility function to generate a random position
+        function generateRandomPosition(radius) {
+            return {
+                x: Math.random() * (MAP_WIDTH - 2 * radius) + radius,
+                y: Math.random() * (MAP_HEIGHT - 2 * radius) + radius
+            };
+        }
+
+        // --- Classes ---
+        class Player {
+            constructor(x, y, radius, color) {
+                this.x = x; this.y = y; this.radius = radius; this.color = color; this.score = 0;
+            }
+            update() {
+                let speed = (PLAYER_SPEED_FACTOR * INITIAL_PLAYER_RADIUS) / Math.sqrt(this.radius);
+                if (isBoosting) {
+                    speed *= BOOST_MULTIPLIER;
+                }
+                if (joystickDx !== 0 || joystickDy !== 0) {
+                    this.x += joystickDx * speed;
+                    this.y += joystickDy * speed;
+                }
+                this.x = Math.max(this.radius, Math.min(MAP_WIDTH - this.radius, this.x));
+                this.y = Math.max(this.radius, Math.min(MAP_HEIGHT - this.radius, this.y));
+            }
+            draw(offsetX, offsetY) {
+                ctx.save();
+                
+                // Draw Shield
+                if (isShieldActive) {
+                    const shieldRadius = this.radius + 10;
+                    const shieldGradient = ctx.createRadialGradient(
+                        this.x - offsetX, this.y - offsetY, this.radius,
+                        this.x - offsetX, this.y - offsetY, shieldRadius
+                    );
+                    shieldGradient.addColorStop(0, 'rgba(30, 144, 255, 0)');
+                    shieldGradient.addColorStop(0.8, 'rgba(30, 144, 255, 0.4)');
+                    shieldGradient.addColorStop(1, 'rgba(30, 144, 255, 0.7)');
+                    ctx.fillStyle = shieldGradient;
+                    ctx.beginPath();
+                    ctx.arc(this.x - offsetX, this.y - offsetY, shieldRadius, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+
+                // Draw Push Wave
+                if (isPushActive) {
+                    const waveProgress = (Date.now() - (pushEndTime - PUSH_DURATION)) / 500; // 0.5s wave cycle
+                    const currentWaveRadius = (waveProgress % 1) * PUSH_RADIUS;
+                    const currentWaveOpacity = 1 - (waveProgress % 1);
+                    ctx.strokeStyle = `rgba(148, 0, 211, ${currentWaveOpacity})`;
+                    ctx.lineWidth = 5;
+                    ctx.beginPath();
+                    ctx.arc(this.x - offsetX, this.y - offsetY, currentWaveRadius, 0, Math.PI * 2);
+                    ctx.stroke();
+                }
+
+                // Efek visual untuk magnet dan boost
+                if (isMagnetActive) {
+                    ctx.shadowBlur = 25;
+                    ctx.shadowColor = "#4169e1";
+                } else if (isBoosting) {
+                    ctx.shadowBlur = 20;
+                    ctx.shadowColor = "#ffA500";
+                }
+
+                ctx.beginPath();
+                ctx.arc(this.x - offsetX, this.y - offsetY, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = this.color;
+                ctx.fill();
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                ctx.restore();
+
+                ctx.fillStyle = 'white';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.font = `${Math.max(10, this.radius / 3)}px Inter`;
+                ctx.fillText('Anda', this.x - offsetX, this.y - offsetY);
+            }
+            grow(amount) {
+                this.radius = Math.sqrt(this.radius * this.radius + amount);
+                this.score += amount;
+            }
+        }
+
+        class Food {
+            constructor(x, y, radius, color) { this.x = x; this.y = y; this.radius = radius; this.color = color; }
+            draw(offsetX, offsetY) {
+                ctx.beginPath();
+                ctx.arc(this.x - offsetX, this.y - offsetY, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = this.color;
+                ctx.fill();
+            }
+        }
+
+        class AI {
+            constructor(id, x, y, radius, color) {
+                this.id = id;
+                this.x = x;
+                this.y = y;
+                this.radius = radius;
+                this.color = color;
+                this.state = 'wandering'; // 'wandering', 'hunting', 'fleeing'
+                this.target = null;
+                // Atur arah acak awal
+                this.dx = (Math.random() - 0.5) * 2;
+                this.dy = (Math.random() - 0.5) * 2;
+                const mag = Math.hypot(this.dx, this.dy);
+                this.dx /= mag;
+                this.dy /= mag;
+                this.decisionTimer = 0; // Timer untuk memutuskan tindakan baru
+            }
+
+            update() {
+                this.speed = (AI_SPEED_FACTOR * INITIAL_AI_RADIUS) / Math.sqrt(this.radius);
+                this.decisionTimer -= 16; // Kira-kira 16ms per frame
+
+                if (this.decisionTimer <= 0) {
+                    this.findTarget();
+                    this.decisionTimer = 250 + Math.random() * 250; // Putuskan setiap 0.25-0.5 detik
+                }
+
+                // Terapkan gerakan berdasarkan state
+                if (this.state === 'hunting' && this.target) {
+                    const targetDx = this.target.x - this.x;
+                    const targetDy = this.target.y - this.y;
+                    const dist = Math.hypot(targetDx, targetDy);
+                    if (dist > 1) {
+                        this.dx = targetDx / dist;
+                        this.dy = targetDy / dist;
+                    }
+                } else if (this.state === 'fleeing' && this.target) {
+                    const threatDx = this.target.x - this.x;
+                    const threatDy = this.target.y - this.y;
+                    const dist = Math.hypot(threatDx, threatDy);
+                    if (dist > 1) {
+                        // Bergerak menjauh dari ancaman
+                        this.dx = -threatDx / dist;
+                        this.dy = -threatDy / dist;
+                    }
+                } else { // Wandering
+                    if (this.decisionTimer <= 0) { // Hanya ubah arah saat timer habis
+                        this.dx = (Math.random() - 0.5) * 2;
+                        this.dy = (Math.random() - 0.5) * 2;
+                        const mag = Math.hypot(this.dx, this.dy);
+                        this.dx /= mag;
+                        this.dy /= mag;
+                    }
+                }
+                
+                this.x += this.dx * this.speed;
+                this.y += this.dy * this.speed;
+
+                // Pemeriksaan batas
+                this.x = Math.max(this.radius, Math.min(MAP_WIDTH - this.radius, this.x));
+                this.y = Math.max(this.radius, Math.min(MAP_HEIGHT - this.radius, this.y));
+            }
+
+            findTarget() {
+                const visionRange = 800;
+                let closestThreat = null;
+                let minThreatDist = visionRange;
+                let closestPrey = null;
+                let minPreyDist = visionRange;
+                let closestFood = null;
+                let minFoodDist = visionRange;
+
+                const potentialTargets = [player, ...ais.filter(a => a.id !== this.id)];
+
+                // 1. Periksa ancaman dan mangsa
+                for (const target of potentialTargets) {
+                    if (!target) continue;
+                    const dist = Math.hypot(this.x - target.x, this.y - target.y);
+
+                    if (dist < visionRange) {
+                        // Apakah ini ancaman? (Lebih besar dan bisa memakanku)
+                        if (target.radius > this.radius * 1.1) {
+                            if (dist < minThreatDist) {
+                                minThreatDist = dist;
+                                closestThreat = target;
+                            }
+                        }
+                        // Apakah ini mangsa? (Lebih kecil dan bisa kumakan)
+                        else if (this.radius > target.radius * 1.1) {
+                            if (dist < minPreyDist) {
+                                minPreyDist = dist;
+                                closestPrey = target;
+                            }
+                        }
+                    }
+                }
+
+                // Logika keputusan
+                if (closestThreat) {
+                    this.state = 'fleeing';
+                    this.target = closestThreat;
+                    return;
+                }
+
+                if (closestPrey) {
+                    this.state = 'hunting';
+                    this.target = closestPrey;
+                    return;
+                }
+
+                // 2. Jika tidak ada ancaman atau mangsa, cari makanan
+                for (const food of foods) {
+                    const dist = Math.hypot(this.x - food.x, this.y - food.y);
+                    if (dist < minFoodDist) {
+                        minFoodDist = dist;
+                        closestFood = food;
+                    }
+                }
+
+                if (closestFood) {
+                    this.state = 'hunting';
+                    this.target = closestFood;
+                    return;
+                }
+
+                // 3. Jika tidak ada yang ditemukan, berkeliaran saja
+                this.state = 'wandering';
+                this.target = null;
+            }
+
+            draw(offsetX, offsetY) {
+                ctx.beginPath();
+                ctx.arc(this.x - offsetX, this.y - offsetY, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = this.color; ctx.fill();
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)'; ctx.lineWidth = 2; ctx.stroke();
+                ctx.fillStyle = 'white'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                ctx.font = `${Math.max(10, this.radius / 3)}px Inter`;
+                ctx.fillText('AI', this.x - offsetX, this.y - offsetY);
+            }
+            grow(amount) { this.radius = Math.sqrt(this.radius * this.radius + amount); }
+        }
+        
+        class Trap {
+            constructor(x, y, radius) {
+                this.x = x; this.y = y; this.radius = radius;
+            }
+            draw(offsetX, offsetY) {
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(this.x - offsetX, this.y - offsetY, this.radius, 0, Math.PI * 2);
+                ctx.strokeStyle = '#dc143c';
+                ctx.lineWidth = 4;
+                ctx.stroke();
+                ctx.fillStyle = 'rgba(220, 20, 60, 0.2)';
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        // --- Game Logic ---
+        function setDifficulty(difficulty) {
+            switch (difficulty) {
+                case 'easy': initialAiCount = 392; break;
+                case 'medium': initialAiCount = 553; break;
+                case 'hard': initialAiCount = 637; break;
+            }
+        }
+
+        function initGame() {
+            resizeCanvas();
+            const playerPos = generateRandomPosition(INITIAL_PLAYER_RADIUS);
+            player = new Player(playerPos.x, playerPos.y, INITIAL_PLAYER_RADIUS, 'rgb(0, 150, 255)');
+            foods = [];
+            for (let i = 0; i < INITIAL_FOOD_COUNT; i++) {
+                const pos = generateRandomPosition(FOOD_RADIUS);
+                foods.push(new Food(pos.x, pos.y, FOOD_RADIUS, getRandomColor()));
+            }
+            ais = [];
+            for (let i = 0; i < initialAiCount; i++) {
+                const aiPos = generateRandomPosition(INITIAL_AI_RADIUS);
+                ais.push(new AI(i, aiPos.x, aiPos.y, INITIAL_AI_RADIUS, getRandomColor()));
+            }
+            traps = [];
+            trapCount = INITIAL_TRAP_COUNT;
+            messageBox.style.display = 'none';
+            if (animationFrameId) cancelAnimationFrame(animationFrameId);
+            gameLoop();
+        }
+
+        function gameLoop() {
+            update();
+            draw();
+            animationFrameId = requestAnimationFrame(gameLoop);
+        }
+
+        function update() {
+            if (!player) return;
+            updateAllBoosterStatus();
+            player.update();
+            ais.forEach(ai => ai.update());
+            
+            // Booster Effects
+            if (isMagnetActive) {
+                foods.forEach(food => {
+                    const distance = Math.hypot(player.x - food.x, player.y - food.y);
+                    if (distance < MAGNET_RADIUS && distance > 1) {
+                        const dx = player.x - food.x;
+                        const dy = player.y - food.y;
+                        food.x += (dx / distance) * MAGNET_PULL_STRENGTH;
+                        food.y += (dy / distance) * MAGNET_PULL_STRENGTH;
+                    }
+                });
+            }
+            if (isPushActive) {
+                ais.forEach(ai => {
+                    const distance = Math.hypot(player.x - ai.x, player.y - ai.y);
+                    if (distance < PUSH_RADIUS) {
+                        const dx = player.x - ai.x;
+                        const dy = player.y - ai.y;
+                        ai.x -= (dx / distance) * PUSH_FORCE;
+                        ai.y -= (dy / distance) * PUSH_FORCE;
+                    }
+                });
+            }
+
+            checkCollisions();
+            playerSizeDisplay.textContent = Math.floor(player.radius);
+            foodCountDisplay.textContent = foods.length;
+            aiCountDisplay.textContent = ais.length;
+            if (player.radius < INITIAL_PLAYER_RADIUS / 2 && ais.length > 0) {
+                showMessage("Game Over! Anda terlalu kecil.", true);
+            } else if (ais.length === 0 && player.radius > INITIAL_PLAYER_RADIUS) {
+                showMessage("Selamat! Anda menang!", true);
+            }
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            if (!player) return;
+            const offsetX = player.x - canvas.width / 2;
+            const offsetY = player.y - canvas.height / 2;
+            ctx.strokeStyle = '#64748b'; ctx.lineWidth = 10;
+            ctx.strokeRect(-offsetX, -offsetY, MAP_WIDTH, MAP_HEIGHT);
+            
+            traps.forEach(trap => trap.draw(offsetX, offsetY));
+            foods.forEach(food => food.draw(offsetX, offsetY));
+            ais.forEach(ai => ai.draw(offsetX, offsetY));
+            player.draw(offsetX, offsetY);
+            drawAiDetector(offsetX, offsetY);
+            drawMinimap();
+        }
+
+        function drawAiDetector(offsetX, offsetY) {
+            if (ais.length > 0 && ais.length <= 100) {
+                let nearestAi = null; let minDistance = Infinity;
+                for (const ai of ais) {
+                    const dist = Math.hypot(player.x - ai.x, player.y - ai.y);
+                    if (dist < minDistance) { minDistance = dist; nearestAi = ai; }
+                }
+                if (nearestAi) {
+                    const angle = Math.atan2(nearestAi.y - player.y, nearestAi.x - player.x);
+                    const startX = player.x - offsetX + player.radius * Math.cos(angle);
+                    const startY = player.y - offsetY + player.radius * Math.sin(angle);
+                    const lineLength = 50;
+                    const endX = startX + lineLength * Math.cos(angle);
+                    const endY = startY + lineLength * Math.sin(angle);
+                    ctx.save();
+                    ctx.strokeStyle = 'rgba(255, 0, 0, 0.7)'; ctx.lineWidth = 5; ctx.lineCap = 'round';
+                    ctx.beginPath(); ctx.moveTo(startX, startY); ctx.lineTo(endX, endY); ctx.stroke();
+                    const headlen = 15;
+                    ctx.beginPath(); ctx.moveTo(endX, endY);
+                    ctx.lineTo(endX - headlen * Math.cos(angle - Math.PI / 7), endY - headlen * Math.sin(angle - Math.PI / 7));
+                    ctx.moveTo(endX, endY);
+                    ctx.lineTo(endX - headlen * Math.cos(angle + Math.PI / 7), endY - headlen * Math.sin(angle + Math.PI / 7));
+                    ctx.stroke(); ctx.restore();
+                }
+            }
+        }
+
+        function drawMinimap() {
+            minimapCtx.clearRect(0, 0, minimapCanvas.width, minimapCanvas.height);
+            const scaleX = minimapCanvas.width / MAP_WIDTH; const scaleY = minimapCanvas.height / MAP_HEIGHT;
+            minimapCtx.fillStyle = 'red';
+            ais.forEach(ai => { minimapCtx.beginPath(); minimapCtx.arc(ai.x * scaleX, ai.y * scaleY, 1, 0, Math.PI * 2); minimapCtx.fill(); });
+            if (player) {
+                minimapCtx.fillStyle = 'cyan'; minimapCtx.beginPath(); minimapCtx.arc(player.x * scaleX, player.y * scaleY, 3, 0, Math.PI * 2); minimapCtx.fill();
+            }
+            const viewX = (player.x - canvas.width / 2) * scaleX; const viewY = (player.y - canvas.height / 2) * scaleY;
+            const viewWidth = canvas.width * scaleX; const viewHeight = canvas.height * scaleY;
+            minimapCtx.strokeStyle = 'white'; minimapCtx.lineWidth = 1; minimapCtx.strokeRect(viewX, viewY, viewWidth, viewHeight);
+        }
+
+        function checkCollisions() {
+            if (!player) return;
+            // Player eats food
+            for (let i = foods.length - 1; i >= 0; i--) {
+                const food = foods[i];
+                if (Math.hypot(player.x - food.x, player.y - food.y) < player.radius) {
+                    player.grow(food.radius * food.radius);
+                    foods.splice(i, 1);
+                    foods.push(new Food(generateRandomPosition(FOOD_RADIUS).x, generateRandomPosition(FOOD_RADIUS).y, FOOD_RADIUS, getRandomColor()));
+                }
+            }
+
+            // AI hits trap
+            aiLoop: for (let i = ais.length - 1; i >= 0; i--) {
+                for (let j = traps.length - 1; j >= 0; j--) {
+                    const ai = ais[i];
+                    if (!ai) continue;
+                    const trap = traps[j];
+                    if (Math.hypot(ai.x - trap.x, ai.y - trap.y) < ai.radius + trap.radius) {
+                        const foodPieces = Math.floor(ai.radius / FOOD_RADIUS);
+                        for (let k = 0; k < foodPieces; k++) {
+                            const angle = Math.random() * Math.PI * 2;
+                            const dist = Math.random() * ai.radius;
+                            foods.push(new Food(ai.x + Math.cos(angle) * dist, ai.y + Math.sin(angle) * dist, FOOD_RADIUS, ai.color));
+                        }
+                        ais.splice(i, 1);
+                        traps.splice(j, 1);
+                        continue aiLoop;
+                    }
+                }
+            }
+
+            // Blob vs Blob
+            const allBlobs = [player, ...ais];
+            for (let i = allBlobs.length - 1; i >= 0; i--) {
+                for (let j = allBlobs.length - 1; j >= 0; j--) {
+                    if (i === j) continue;
+                    const b1 = allBlobs[i]; const b2 = allBlobs[j];
+                    if (!b1 || !b2) continue;
+                    if (Math.hypot(b1.x - b2.x, b1.y - b2.y) < b1.radius && b1.radius > b2.radius * 1.1) {
+                        // Shield protection
+                        if (b2 === player && isShieldActive) continue;
+                        
+                        b1.grow(b2.radius * b2.radius);
+                        if (b2 === player) { showMessage("Game Over! Anda dimakan AI!", true); player = null; return; } 
+                        else { 
+                            const b2Index = ais.findIndex(a => a.id === b2.id);
+                            if (b2Index > -1) ais.splice(b2Index, 1);
+                        }
+                        allBlobs.splice(j, 1);
+                        if (j < i) i--;
+                        break;
+                    }
+                }
+            }
+            
+            // AI eats food
+            for (let i = ais.length - 1; i >= 0; i--) {
+                const ai = ais[i];
+                for (let j = foods.length - 1; j >= 0; j--) {
+                    const food = foods[j];
+                    if (Math.hypot(ai.x - food.x, ai.y - food.y) < ai.radius) {
+                        ai.grow(food.radius * food.radius);
+                        foods.splice(j, 1);
+                        foods.push(new Food(generateRandomPosition(FOOD_RADIUS).x, generateRandomPosition(FOOD_RADIUS).y, FOOD_RADIUS, getRandomColor()));
+                    }
+                }
+            }
+        }
+
+        function showMessage(message, showButton) {
+            messageText.textContent = message;
+            restartButton.style.display = showButton ? 'inline-block' : 'none';
+            messageBox.style.display = 'flex';
+            gameWrapper.style.display = 'none';
+            cancelAnimationFrame(animationFrameId);
+        }
+        
+        function showMenu() {
+            mainMenu.style.display = 'flex';
+            gameWrapper.style.display = 'none';
+            messageBox.style.display = 'none';
+            if (animationFrameId) cancelAnimationFrame(animationFrameId);
+        }
+        
+        function startGame(difficulty) {
+            setDifficulty(difficulty);
+            mainMenu.style.display = 'none';
+            gameWrapper.style.display = 'block';
+            // Tampilkan joystick di semua perangkat saat game dimulai
+            joystickContainer.style.display = 'flex';
+            boostersWrapper.style.display = 'flex';
+            initGame();
+        }
+
+        // --- Boosters Logic ---
+        function activateBoost() {
+            const now = Date.now();
+            if (now > boostCooldownEndTime) {
+                isBoosting = true;
+                boostEndTime = now + BOOST_DURATION;
+                boostCooldownEndTime = now + BOOST_DURATION + BOOST_COOLDOWN;
+            }
+        }
+
+        function activateMagnet() {
+            const now = Date.now();
+            if (now > magnetCooldownEndTime) {
+                isMagnetActive = true;
+                magnetEndTime = now + MAGNET_DURATION;
+                magnetCooldownEndTime = now + MAGNET_DURATION + MAGNET_COOLDOWN;
+            }
+        }
+
+        function activateShield() {
+            const now = Date.now();
+            if (now > shieldCooldownEndTime) {
+                isShieldActive = true;
+                shieldEndTime = now + SHIELD_DURATION;
+                shieldCooldownEndTime = now + SHIELD_DURATION + SHIELD_COOLDOWN;
+            }
+        }
+
+        function activatePush() {
+            const now = Date.now();
+            if (now > pushCooldownEndTime) {
+                isPushActive = true;
+                pushEndTime = now + PUSH_DURATION;
+                pushCooldownEndTime = now + PUSH_DURATION + PUSH_COOLDOWN;
+            }
+        }
+
+        function placeTrap() {
+            if (trapCount > 0 && player) {
+                trapCount--;
+                traps.push(new Trap(player.x, player.y, TRAP_RADIUS));
+            }
+        }
+
+        function updateAllBoosterStatus() {
+            const now = Date.now();
+            
+            // Generic status update function
+            const updateStatus = (button, timerEl, isActive, endTime, cooldownEndTime, activeText, readyText) => {
+                button.classList.remove('ready', 'active', 'cooldown');
+                timerEl.textContent = '';
+                if (now < cooldownEndTime) {
+                    if (isActive) {
+                        button.classList.add('active');
+                        button.textContent = activeText;
+                        const remaining = ((endTime - now) / 1000).toFixed(1);
+                        timerEl.textContent = `${remaining}s`;
+                    } else {
+                        button.classList.add('cooldown');
+                        const remaining = ((cooldownEndTime - now) / 1000).toFixed(1);
+                        button.textContent = `${remaining}s`;
+                    }
+                } else {
+                    button.classList.add('ready');
+                    button.textContent = readyText;
+                }
+            };
+
+            // Deactivate if duration is over
+            if (isBoosting && now > boostEndTime) isBoosting = false;
+            if (isMagnetActive && now > magnetEndTime) isMagnetActive = false;
+            if (isShieldActive && now > shieldEndTime) isShieldActive = false;
+            if (isPushActive && now > pushEndTime) isPushActive = false;
+
+            // Update UI
+            updateStatus(boostButton, boostTimer, isBoosting, boostEndTime, boostCooldownEndTime, 'AKTIF', 'BOOST');
+            updateStatus(magnetButton, magnetTimer, isMagnetActive, magnetEndTime, magnetCooldownEndTime, 'AKTIF', 'MAGNET');
+            updateStatus(shieldButton, shieldTimer, isShieldActive, shieldEndTime, shieldCooldownEndTime, 'AKTIF', 'SHIELD');
+            updateStatus(pushButton, pushTimer, isPushActive, pushEndTime, pushCooldownEndTime, 'AKTIF', 'PUSH');
+
+            // Update Trap status
+            trapCountDisplay.textContent = `x ${trapCount}`;
+            if (trapCount > 0) {
+                trapButton.classList.remove('disabled');
+                trapButton.classList.add('ready');
+            } else {
+                trapButton.classList.remove('ready');
+                trapButton.classList.add('disabled');
+            }
+        }
+
+        // --- Input Handlers ---
+        function handleDesktopInput(event) {
+            const rect = canvas.getBoundingClientRect();
+            const mouseX = event.clientX - rect.left;
+            const mouseY = event.clientY - rect.top;
+            
+            // Player movement calculation (relative to screen center)
+            const playerDx = mouseX - (canvas.width / 2);
+            const playerDy = mouseY - (canvas.height / 2);
+            const playerDist = Math.hypot(playerDx, playerDy);
+
+            if (playerDist > 1) { 
+                joystickDx = playerDx / playerDist; 
+                joystickDy = playerDy / playerDist; 
+            } else { 
+                joystickDx = 0; 
+                joystickDy = 0; 
+            }
+
+            // Visual joystick knob calculation (relative to joystick container)
+            const joystickRect = joystickContainer.getBoundingClientRect();
+            const joystickCenterX = joystickRect.left + joystickRect.width / 2;
+            const joystickCenterY = joystickRect.top + joystickRect.height / 2;
+            
+            let knobDx = event.clientX - joystickCenterX;
+            let knobDy = event.clientY - joystickCenterY;
+            const knobDist = Math.hypot(knobDx, knobDy);
+            
+            const maxKnobDistance = (joystickContainer.offsetWidth / 2) - (joystickKnob.offsetWidth / 2);
+
+            if (knobDist > maxKnobDistance) {
+                knobDx = (knobDx / knobDist) * maxKnobDistance;
+                knobDy = (knobDy / knobDist) * maxKnobDistance;
+            }
+            
+            joystickKnob.style.transform = `translate(${knobDx}px, ${knobDy}px)`;
+        }
+
+        function moveJoystick(touch) {
+            const rect = joystickContainer.getBoundingClientRect();
+            const joystickCenterX = rect.left + rect.width / 2;
+            const joystickCenterY = rect.top + rect.height / 2;
+            let dx = touch.clientX - joystickCenterX;
+            let dy = touch.clientY - joystickCenterY;
+            const distance = Math.hypot(dx, dy);
+            if (distance > 0) {
+                joystickDx = dx / distance;
+                joystickDy = dy / distance;
+            } else {
+                joystickDx = 0;
+                joystickDy = 0;
+            }
+            const maxKnobDistance = (joystickContainer.offsetWidth / 2) - (joystickKnob.offsetWidth / 2);
+            if (distance > maxKnobDistance) {
+                dx = (dx / distance) * maxKnobDistance;
+                dy = (dy / distance) * maxKnobDistance;
+            }
+            joystickKnob.style.transform = `translate(${dx}px, ${dy}px)`;
+        }
+        
+        function setupInputListeners() {
+            isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+            if (isTouchDevice) {
+                // Event listener untuk memulai interaksi joystick
+                joystickContainer.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    joystickActive = true;
+                    moveJoystick(e.changedTouches[0]);
+                }, { passive: false });
+
+                // Event listener untuk pergerakan jari di seluruh layar
+                window.addEventListener('touchmove', (e) => {
+                    if (joystickActive) {
+                        e.preventDefault(); // Mencegah scrolling layar
+                        moveJoystick(e.changedTouches[0]);
+                    }
+                }, { passive: false });
+
+                // Fungsi untuk menghentikan interaksi joystick
+                const endJoystick = (e) => {
+                    if (joystickActive) {
+                        e.preventDefault();
+                        joystickActive = false;
+                        joystickDx = 0;
+                        joystickDy = 0;
+                        joystickKnob.style.transform = `translate(0px, 0px)`;
+                    }
+                };
+
+                window.addEventListener('touchend', endJoystick, { passive: false });
+                window.addEventListener('touchcancel', endJoystick, { passive: false });
+                
+            } else {
+                // Kontrol mouse untuk desktop
+                canvas.addEventListener('mousemove', handleDesktopInput);
+                canvas.addEventListener('mouseleave', () => {
+                    joystickDx = 0;
+                    joystickDy = 0;
+                    joystickKnob.style.transform = `translate(0px, 0px)`;
+                });
+            }
+
+            // Event listeners untuk tombol booster
+            boostButton.addEventListener('click', (e) => { e.stopPropagation(); activateBoost(); });
+            magnetButton.addEventListener('click', (e) => { e.stopPropagation(); activateMagnet(); });
+            trapButton.addEventListener('click', (e) => { e.stopPropagation(); placeTrap(); });
+            shieldButton.addEventListener('click', (e) => { e.stopPropagation(); activateShield(); });
+            pushButton.addEventListener('click', (e) => { e.stopPropagation(); activatePush(); });
+
+            // Event listeners untuk keyboard
+            window.addEventListener('keydown', (e) => {
+                if (e.code === 'Space') { e.preventDefault(); activateBoost(); }
+                if (e.key === 'Control' || e.ctrlKey) { e.preventDefault(); activateMagnet(); }
+                if (e.key === 't' || e.key === 'T') { e.preventDefault(); placeTrap(); }
+                if (e.key === 's' || e.key === 'S') { e.preventDefault(); activateShield(); }
+                if (e.key === 'd' || e.key === 'D') { e.preventDefault(); activatePush(); }
+            });
+        }
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            if(player) {
+                draw();
+            }
+        }
+
+        // --- General Event Listeners ---
+        restartButton.addEventListener('click', showMenu);
+        easyBtn.addEventListener('click', () => startGame('easy'));
+        mediumBtn.addEventListener('click', () => startGame('medium'));
+        hardBtn.addEventListener('click', () => startGame('hard'));
+        window.addEventListener('resize', resizeCanvas);
+
+        // Initialize
+        setupInputListeners();
+        window.onload = showMenu;
+
+    </script>
+</body>
+</html>
+
