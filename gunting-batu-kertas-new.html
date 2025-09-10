@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gunting Batu Kertas</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+        }
+        .btn-choice {
+            transition: transform 0.1s ease-in-out, box-shadow 0.2s ease-in-out;
+            cursor: pointer;
+        }
+        .btn-choice:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        }
+        .btn-choice:active {
+            transform: translateY(0);
+        }
+        .loading-dot {
+            animation: bounce 1.4s infinite ease-in-out both;
+        }
+        .loading-dot:nth-child(1) { animation-delay: -0.32s; }
+        .loading-dot:nth-child(2) { animation-delay: -0.16s; }
+        .loading-dot:nth-child(3) { animation-delay: 0s; }
+        @keyframes bounce {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1.0); }
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-4">
+
+    <!-- Game Container -->
+    <div class="bg-white p-8 md:p-12 rounded-2xl shadow-xl w-full max-w-lg text-center">
+        
+        <!-- Game Title -->
+        <h1 class="text-4xl md:text-5xl font-bold mb-4 text-gray-800">Gunting Batu Kertas</h1>
+        
+        <!-- Scoreboard -->
+        <div class="flex justify-around items-center my-6 text-xl">
+            <div class="p-4 bg-gray-100 rounded-xl shadow-inner w-28">
+                <span id="player-score" class="text-3xl font-bold text-indigo-600">0</span>
+                <p class="text-sm font-semibold mt-1">Anda</p>
+            </div>
+            <span class="text-2xl font-bold text-gray-500 mx-4">vs</span>
+            <div class="p-4 bg-gray-100 rounded-xl shadow-inner w-28">
+                <span id="computer-score" class="text-3xl font-bold text-red-600">0</span>
+                <p class="text-sm font-semibold mt-1">Komputer</p>
+            </div>
+        </div>
+
+        <!-- Result and Message Display -->
+        <div id="result-message" class="h-20 flex items-center justify-center">
+            <p class="text-2xl font-semibold text-gray-700">Pilih salah satu di bawah!</p>
+        </div>
+
+        <!-- Choices Container -->
+        <div id="buttons-container" class="flex justify-center gap-4 my-8">
+            <button class="btn-choice bg-indigo-500 text-white font-bold py-4 px-6 rounded-xl shadow-lg hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-50 transition-colors" data-choice="gunting">Gunting</button>
+            <button class="btn-choice bg-indigo-500 text-white font-bold py-4 px-6 rounded-xl shadow-lg hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-50 transition-colors" data-choice="batu">Batu</button>
+            <button class="btn-choice bg-indigo-500 text-white font-bold py-4 px-6 rounded-xl shadow-lg hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-50 transition-colors" data-choice="kertas">Kertas</button>
+        </div>
+        
+        <!-- Reset Button -->
+        <button id="reset-btn" class="bg-gray-200 text-gray-700 font-semibold py-2 px-6 rounded-xl shadow-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-opacity-50 transition-colors mt-4">
+            Mula Semula
+        </button>
+
+        <!-- Loading Indicator -->
+        <div id="loading-indicator" class="hidden flex justify-center items-center h-20">
+            <div class="flex space-x-2">
+                <div class="w-3 h-3 bg-indigo-600 rounded-full loading-dot"></div>
+                <div class="w-3 h-3 bg-indigo-600 rounded-full loading-dot"></div>
+                <div class="w-3 h-3 bg-indigo-600 rounded-full loading-dot"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // DOM element references
+        const playerScoreSpan = document.getElementById('player-score');
+        const computerScoreSpan = document.getElementById('computer-score');
+        const resultMessage = document.getElementById('result-message');
+        const buttonsContainer = document.getElementById('buttons-container');
+        const resetBtn = document.getElementById('reset-btn');
+        const loadingIndicator = document.getElementById('loading-indicator');
+
+        // Game state variables
+        let playerScore = 0;
+        let computerScore = 0;
+        const choices = ['batu', 'kertas', 'gunting'];
+
+        // Function to update the score display on the UI
+        function updateScoreDisplay() {
+            playerScoreSpan.textContent = playerScore;
+            computerScoreSpan.textContent = computerScore;
+        }
+
+        // Function to simulate an API call for the computer's choice
+        // This function returns a Promise that resolves with a random choice
+        // after a delay to mimic network latency.
+        async function getComputerChoiceApi() {
+            return new Promise(resolve => {
+                setTimeout(() => {
+                    const randomIndex = Math.floor(Math.random() * choices.length);
+                    resolve(choices[randomIndex]);
+                }, 1000); // Simulate 1 second network delay
+            });
+        }
+
+        // Main game logic function
+        async function playGame(playerChoice) {
+            // Disable buttons and show loading indicator while waiting for "API" response
+            const choiceButtons = buttonsContainer.querySelectorAll('button');
+            choiceButtons.forEach(button => button.disabled = true);
+            resultMessage.classList.add('hidden');
+            loadingIndicator.classList.remove('hidden');
+
+            try {
+                // Get computer's choice from the mock API
+                const computerChoice = await getComputerChoiceApi();
+
+                // Hide loading indicator and show result message
+                loadingIndicator.classList.add('hidden');
+                resultMessage.classList.remove('hidden');
+
+                let resultText;
+                let isDraw = false;
+
+                // Determine the winner
+                if (playerChoice === computerChoice) {
+                    resultText = `Seri! Kedua-duanya memilih ${playerChoice}.`;
+                    isDraw = true;
+                } else if (
+                    (playerChoice === 'batu' && computerChoice === 'gunting') ||
+                    (playerChoice === 'kertas' && computerChoice === 'batu') ||
+                    (playerChoice === 'gunting' && computerChoice === 'kertas')
+                ) {
+                    resultText = `Anda menang! ${playerChoice} mengalahkan ${computerChoice}.`;
+                    playerScore++;
+                } else {
+                    resultText = `Anda kalah! ${computerChoice} mengalahkan ${playerChoice}.`;
+                    computerScore++;
+                }
+
+                // Update UI with the result message
+                resultMessage.querySelector('p').textContent = resultText;
+                
+                // Update the score display
+                updateScoreDisplay();
+
+            } catch (error) {
+                console.error('Error fetching computer choice:', error);
+                resultMessage.querySelector('p').textContent = 'Error: Gagal mendapatkan pilihan komputer.';
+            } finally {
+                // Re-enable buttons after the round is over
+                const choiceButtons = buttonsContainer.querySelectorAll('button');
+                choiceButtons.forEach(button => button.disabled = false);
+            }
+        }
+
+        // Reset the game state
+        function resetGame() {
+            playerScore = 0;
+            computerScore = 0;
+            updateScoreDisplay();
+            resultMessage.querySelector('p').textContent = 'Pilih salah satu di bawah!';
+        }
+
+        // Add event listeners to the choice buttons
+        buttonsContainer.addEventListener('click', (event) => {
+            const button = event.target.closest('button');
+            if (button) {
+                const playerChoice = button.dataset.choice;
+                playGame(playerChoice);
+            }
+        });
+
+        // Add event listener for the reset button
+        resetBtn.addEventListener('click', resetGame);
+
+        // Initial score update on page load
+        window.onload = updateScoreDisplay;
+    </script>
+</body>
+</html>
