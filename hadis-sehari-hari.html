@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Hadis Sehari-hari</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f4f8fb;
+      color: #333;
+      padding: 20px;
+      max-width: 800px;
+      margin: auto;
+    }
+    h1 {
+      text-align: center;
+      color: #2c3e50;
+    }
+    .hadith {
+      background-color: white;
+      border-radius: 10px;
+      padding: 15px;
+      margin-bottom: 15px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    .arabic {
+      font-size: 1.4em;
+      text-align: right;
+      direction: rtl;
+      font-family: 'Scheherazade New', 'Traditional Arabic', serif;
+      margin-bottom: 10px;
+      color: #16a085;
+    }
+    .translation {
+      font-size: 1em;
+      line-height: 1.6;
+      color: #555;
+    }
+    .reference {
+      font-size: 0.9em;
+      color: #7f8c8d;
+      margin-top: 10px;
+    }
+    .footer {
+      text-align: center;
+      margin-top: 30px;
+      color: #95a5a6;
+      font-size: 0.9em;
+    }
+    @media (max-width: 600px) {
+      .arabic { font-size: 1.2em; }
+    }
+  </style>
+</head>
+<body>
+  <h1>📚 Hadis Sehari-hari</h1>
+  <div id="hadith-container">
+    <p>Memuat hadis...</p>
+  </div>
+  <div class="footer">
+    Data dari: <a href="https://github.com/gadingnst/hadith-api" target="_blank">hadith-api</a>
+  </div>
+
+  <script>
+    const API_URL = "https://api.hadith.gading.dev/books/bukhari?range=1-100"; // contoh: Bukhari 1-100
+    const container = document.getElementById("hadith-container");
+
+    function getCurrentDate() {
+      return new Date().toISOString().split("T")[0]; // format: YYYY-MM-DD
+    }
+
+    async function fetchHadiths() {
+      try {
+        const res = await fetch(API_URL);
+        const data = await res.json();
+        const allHadiths = data.data.hadiths;
+
+        // Ambil 5 hadis acak
+        const shuffled = allHadiths.sort(() => 0.5 - Math.random());
+        return shuffled.slice(0, 5).map(h => ({
+          arabic: h.arab,
+          translation: h.id,
+          reference: `${data.data.name} ${h.number}`
+        }));
+      } catch (err) {
+        console.error("Gagal ambil hadis:", err);
+        return null;
+      }
+    }
+
+    function displayHadiths(hadiths) {
+      container.innerHTML = "";
+      hadiths.forEach(h => {
+        const div = document.createElement("div");
+        div.className = "hadith";
+        div.innerHTML = `
+          <div class="arabic">${h.arabic}</div>
+          <div class="translation">${h.translation}</div>
+          <div class="reference">📖 ${h.reference}</div>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    async function loadDailyHadiths() {
+      const today = getCurrentDate();
+      const savedDate = localStorage.getItem("lastFetchDate");
+      const savedHadiths = localStorage.getItem("dailyHadiths");
+
+      if (savedDate === today && savedHadiths) {
+        // Gunakan hadis dari local storage
+        displayHadiths(JSON.parse(savedHadiths));
+      } else {
+        // Ambil hadis baru dari API
+        const newHadiths = await fetchHadiths();
+        if (newHadiths) {
+          localStorage.setItem("lastFetchDate", today);
+          localStorage.setItem("dailyHadiths", JSON.stringify(newHadiths));
+          displayHadiths(newHadiths);
+        } else {
+          container.innerHTML = "<p>Maaf, gagal memuat hadis. Coba lagi nanti.</p>";
+        }
+      }
+    }
+
+    // Jalankan saat halaman dimuat
+    loadDailyHadiths();
+  </script>
+</body>
+</html>
