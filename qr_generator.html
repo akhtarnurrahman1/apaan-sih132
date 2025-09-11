@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generator Kode QR</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f2f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .container {
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+            width: 100%;
+            max-width: 500px;
+            text-align: center;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 20px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 16px;
+            box-sizing: border-box;
+            transition: border-color 0.3s ease;
+        }
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #6366f1; /* Indigo 500 */
+        }
+        button {
+            background-color: #6366f1; /* Indigo 500 */
+            color: white;
+            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            width: 100%;
+            font-weight: 600;
+        }
+        button:hover {
+            background-color: #4f46e5; /* Indigo 600 */
+            transform: translateY(-2px);
+        }
+        button:active {
+            transform: translateY(0);
+        }
+        canvas {
+            display: block;
+            margin: 30px auto 20px auto;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+        }
+        #downloadLink {
+            display: inline-block;
+            background-color: #10b981; /* Emerald 500 */
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 16px;
+            font-weight: 600;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            margin-top: 15px;
+        }
+        #downloadLink:hover {
+            background-color: #059669; /* Emerald 600 */
+            transform: translateY(-2px);
+        }
+        #downloadLink:active {
+            transform: translateY(0);
+        }
+        h1 {
+            color: #1a202c;
+            font-size: 2.25rem; /* text-4xl */
+            font-weight: 700; /* font-bold */
+            margin-bottom: 25px;
+        }
+        p {
+            color: #4a5568;
+            font-size: 1rem; /* text-base */
+            margin-bottom: 25px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Generator Kode QR</h1>
+        <p>Masukkan teks atau URL di bawah ini untuk menghasilkan kode QR.</p>
+        <input type="text" id="qrInput" placeholder="Ketik teks atau URL di sini..." value="https://www.google.com">
+        <button id="generateBtn">Buat Kode QR</button>
+        <canvas id="qrCanvas"></canvas>
+        <a id="downloadLink" download="qrcode.png" style="display: none;">Unduh Kode QR</a>
+    </div>
+
+    <script>
+        const qrInput = document.getElementById('qrInput');
+        const generateBtn = document.getElementById('generateBtn');
+        const qrCanvas = document.getElementById('qrCanvas');
+        const downloadLink = document.getElementById('downloadLink');
+
+        // Inisialisasi QRious
+        const qr = new QRious({
+            element: qrCanvas,
+            size: 250, // Ukuran default
+            value: qrInput.value // Nilai awal
+        });
+
+        // Fungsi untuk menghasilkan kode QR
+        function generateQRCode() {
+            const inputValue = qrInput.value.trim();
+            if (inputValue) {
+                qr.value = inputValue;
+                qrCanvas.style.display = 'block';
+                downloadLink.href = qrCanvas.toDataURL('image/png');
+                downloadLink.style.display = 'inline-block';
+            } else {
+                qrCanvas.style.display = 'none';
+                downloadLink.style.display = 'none';
+            }
+        }
+
+        // Event listener untuk tombol "Buat Kode QR"
+        generateBtn.addEventListener('click', generateQRCode);
+
+        // Panggil fungsi generateQRCode saat halaman dimuat untuk menampilkan QR awal
+        window.onload = generateQRCode;
+
+        // Memperbarui QR saat input berubah
+        qrInput.addEventListener('input', generateQRCode);
+    </script>
+</body>
+</html>
